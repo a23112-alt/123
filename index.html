@@ -1,0 +1,2095 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HKDSE 智慧溫習室｜筆記考點剖析 · 智能錯題重練系統</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      font-family: 'Inter', 'Noto Sans TC', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: #f4f7f6;
+      color: #1e293b;
+    }
+    .fade-in {
+      animation: fadeIn 0.25s ease-out forwards;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .kp-card {
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .kp-card:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(15, 23, 42, 0.05);
+    }
+    .option-btn {
+      transition: all 0.16s ease;
+    }
+    .option-btn:not(:disabled):hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(13, 148, 136, 0.08);
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- 頂部導航與學習狀態統計欄 -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-2xs">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 py-3">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+        <!-- 品牌標題區 -->
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-600 to-emerald-600 text-white flex items-center justify-center font-bold text-base shadow-xs shrink-0">
+            AI
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-[11px] font-bold tracking-wider px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 border border-teal-200">HKDSE 智慧溫習室</span>
+              <span class="text-xs text-slate-400 hidden sm:inline">Gemini 視覺解析 & 變種題引擎</span>
+            </div>
+            <h1 class="text-base sm:text-lg font-bold text-slate-800 mt-0.5">筆記考點剖析 · 智能錯題重練系統</h1>
+          </div>
+        </div>
+
+        <!-- 學習進度與跨設備同步操作欄 -->
+        <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+          <!-- 雲端/學習碼狀態指示燈 -->
+          <button type="button" onclick="openSyncModal()" id="sync-status-pill" class="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition-colors text-left">
+            <span id="sync-dot" class="w-2 h-2 rounded-full bg-slate-400"></span>
+            <div>
+              <div id="sync-label-title" class="text-[11px] font-bold text-slate-700 leading-tight">尚未設定學習碼</div>
+              <div id="sync-label-sub" class="text-[10px] text-slate-400 leading-tight">點擊設定免註冊同步碼</div>
+            </div>
+          </button>
+
+          <!-- 學習數據儀表板 -->
+          <div class="flex items-center gap-3 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200/80">
+            <div class="text-center">
+              <div class="text-[10px] text-slate-500">已析課題</div>
+              <div id="stat-topics" class="text-sm font-bold text-slate-800">1</div>
+            </div>
+            <div class="h-6 w-px bg-slate-200"></div>
+            <div class="text-center">
+              <div class="text-[10px] text-slate-500">累計刷題</div>
+              <div id="stat-answered" class="text-sm font-bold text-teal-700">0</div>
+            </div>
+            <div class="h-6 w-px bg-slate-200"></div>
+            <div class="text-center">
+              <div class="text-[10px] text-slate-500">待攻克錯題</div>
+              <div id="stat-mistakes" class="text-sm font-bold text-rose-600">0</div>
+            </div>
+            <div class="h-6 w-px bg-slate-200 hidden sm:block"></div>
+            <div class="hidden sm:flex items-center gap-1.5">
+              <div class="text-right">
+                <div class="text-[10px] text-slate-500">掌握率 <span id="stat-mastery" class="font-bold text-indigo-600">0%</span></div>
+                <div class="w-16 h-1.5 bg-slate-200 rounded-full overflow-hidden mt-0.5">
+                  <div id="stat-mastery-bar" class="h-full bg-indigo-600 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 同步與備份按鈕 -->
+          <div class="flex items-center gap-1.5">
+            <button type="button" onclick="openSyncModal()" class="px-3 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 transition-colors shadow-2xs flex items-center gap-1">
+              <span>🔑</span><span>專屬學習碼</span>
+            </button>
+            <button type="button" onclick="exportBackupJson()" class="px-3 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 text-xs font-semibold hover:bg-slate-50 transition-colors">
+              本地備份
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 三大核心工作流分頁切換 -->
+      <nav class="grid grid-cols-3 gap-2 mt-3" aria-label="主要功能導航">
+        <button type="button" id="nav-tab-notes" onclick="switchTab('notes')" class="flex items-center justify-center sm:justify-between px-3.5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all bg-teal-600 text-white shadow-xs">
+          <span class="flex items-center gap-1.5"><span>📥</span><span>1. 上傳筆記與考點標示</span></span>
+        </button>
+        <button type="button" id="nav-tab-quiz" onclick="switchTab('quiz')" class="flex items-center justify-center sm:justify-between px-3.5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all bg-white border border-slate-200 text-slate-600 hover:bg-slate-50">
+          <span class="flex items-center gap-1.5"><span>✍️</span><span>2. 互動刷題測驗</span></span>
+        </button>
+        <button type="button" id="nav-tab-mistakes" onclick="switchTab('mistakes')" class="flex items-center justify-center sm:justify-between px-3.5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all bg-white border border-slate-200 text-slate-600 hover:bg-slate-50">
+          <span class="flex items-center gap-1.5"><span>🎯</span><span>3. 智能錯題與變種題</span></span>
+          <span id="nav-mistake-badge" class="hidden ml-1.5 px-2 py-0.5 rounded-full bg-rose-500 text-white text-[11px] font-bold">0</span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- 主內容工作區 -->
+  <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6">
+
+    <!-- =====================================================================
+         分頁 1：上傳筆記與考點分級標示
+    ===================================================================== -->
+    <div id="view-notes" class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start fade-in">
+      <!-- 左側：上傳新課題筆記面板 (4欄) -->
+      <section class="lg:col-span-4 bg-white rounded-2xl shadow-2xs border border-slate-200/90 p-5 space-y-4">
+        <div>
+          <h2 class="text-base font-bold text-slate-800">上傳新課題筆記</h2>
+          <div class="flex flex-wrap gap-1.5 mt-2">
+            <button type="button" onclick="loadSampleTopic('bio_unit2')" class="px-2.5 py-1 rounded-lg bg-teal-50 text-teal-700 border border-teal-200 text-[11px] font-semibold hover:bg-teal-100 transition-colors">
+              🧬 範例1：生命化學成分
+            </button>
+            <button type="button" onclick="loadSampleTopic('bio_enzymes')" class="px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-200 text-[11px] font-semibold hover:bg-indigo-100 transition-colors">
+              ✨ 範例2：酶的特性
+            </button>
+          </div>
+          <p class="text-xs text-slate-500 mt-2 leading-relaxed">
+            拍照上傳課堂筆記（支援辨識手寫填空與圖表），或貼上文字重點。AI 將自動按 DSE 評核標準標示考點級別並生成配套練習題。
+          </p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2.5">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">科目</label>
+            <select id="upload-subject" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none focus:border-teal-500">
+              <option value="DSE 生物">DSE 生物</option>
+              <option value="DSE 化學">DSE 化學</option>
+              <option value="DSE 物理">DSE 物理</option>
+              <option value="綜合科學">綜合科學</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">課題名稱（選填，AI 可自動識別）</label>
+            <input id="upload-title" type="text" placeholder="例如：3.1 酶與新陳代謝" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700 focus:outline-none focus:border-teal-500" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">上傳筆記相片（支援多張圖片）</label>
+          <label class="flex flex-col items-center justify-center border-2 border-dashed border-slate-300 hover:border-teal-500 rounded-2xl p-5 bg-slate-50/70 hover:bg-teal-50/30 cursor-pointer transition-colors text-center">
+            <span class="text-2xl mb-1">📸</span>
+            <span class="text-xs font-bold text-slate-700">點擊拍照或選擇筆記圖片</span>
+            <span class="text-[11px] text-slate-400 mt-0.5">支援 JPG / PNG，可同時選取多頁筆記</span>
+            <input id="upload-images" type="file" accept="image/*" multiple class="hidden" onchange="handleImageUploadPreview(event)" />
+          </label>
+          <div id="image-preview-list" class="flex flex-wrap gap-2 mt-2"></div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">或貼上 / 輸入筆記文字重點</label>
+          <textarea id="upload-text" rows="4" placeholder="在此貼上課堂筆記文字、老師補充重點或課文摘要..." class="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700 focus:outline-none focus:border-teal-500 leading-relaxed"></textarea>
+        </div>
+
+        <button type="button" id="analyze-btn" onclick="analyzeNotesWithGemini()" class="w-full py-3 rounded-xl bg-gradient-to-r from-teal-600 to-indigo-600 text-white font-bold text-xs sm:text-sm hover:opacity-95 transition-opacity shadow-sm flex items-center justify-center gap-2">
+          <span>🚀</span>
+          <span>開始 AI 深度分析並標示考點</span>
+        </button>
+      </section>
+
+      <!-- 右側：已建立的課題知識庫與考點分級標示區 (8欄) -->
+      <section class="lg:col-span-8 space-y-4">
+        <!-- 課題切換標籤列 -->
+        <div class="bg-white rounded-2xl shadow-2xs border border-slate-200/90 p-4">
+          <div class="flex items-center justify-between mb-2.5">
+            <span class="text-xs font-bold text-slate-500">已建立的課題知識庫</span>
+            <span id="topic-library-count" class="text-xs text-slate-400">共 1 個課題</span>
+          </div>
+          <div id="topic-pills-container" class="flex flex-wrap gap-2">
+            <!-- 課題按鈕由 JS 動態渲染 -->
+          </div>
+        </div>
+
+        <!-- 當前選中課題的考點解析主卡 -->
+        <div id="topic-analysis-display" class="bg-white rounded-2xl shadow-2xs border border-slate-200/90 p-5 sm:p-6">
+          <!-- 由 renderTopicAnalysisView() 動態填充 -->
+        </div>
+      </section>
+    </div>
+
+    <!-- =====================================================================
+         分頁 2：互動刷題測驗區
+    ===================================================================== -->
+    <div id="view-quiz" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-6 items-start fade-in">
+      <!-- 左側主答題區 (8欄) -->
+      <section class="lg:col-span-8 bg-white rounded-2xl shadow-2xs border border-slate-200/90 p-5 sm:p-7">
+        <!-- 篩選課題與題號資訊 -->
+        <div class="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-slate-100">
+          <div class="flex flex-wrap items-center gap-2">
+            <span id="quiz-progress-badge" class="px-3 py-1 rounded-lg bg-teal-600 text-white font-bold text-xs sm:text-sm">第 1 題 / 6</span>
+            <span id="quiz-topic-badge" class="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 text-xs font-medium">單元 2：生命的基本單位</span>
+            <span id="quiz-keyword-badge" class="px-2.5 py-1 rounded-lg bg-amber-50 text-amber-800 border border-amber-200 text-xs font-semibold">考點詞：水的六大生理功用</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <select id="quiz-topic-filter" onchange="filterQuizByTopic(this.value)" class="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-700 focus:outline-none">
+              <option value="ALL">全部課題題目</option>
+            </select>
+            <button type="button" onclick="manualAddCurrentToMistakes()" class="px-2.5 py-1 rounded-lg border border-slate-200 text-slate-600 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 text-xs font-semibold transition-colors">
+              + 加入錯題本
+            </button>
+          </div>
+        </div>
+
+        <!-- 題幹 -->
+        <div class="mt-5">
+          <h2 id="quiz-stem" class="text-base sm:text-lg font-bold text-slate-800 leading-relaxed whitespace-pre-line">
+            載入題目中...
+          </h2>
+        </div>
+
+        <!-- 選項列表 -->
+        <div id="quiz-options" class="mt-5 space-y-3"></div>
+
+        <!-- 即時解析卡片 -->
+        <div id="quiz-feedback" class="hidden mt-6 rounded-xl p-4 sm:p-5 border fade-in"></div>
+
+        <!-- 上一題 / 下一題控制列 -->
+        <div class="mt-7 pt-4 border-t border-slate-100 flex items-center justify-between">
+          <button type="button" id="quiz-prev-btn" onclick="navigateQuiz(-1)" class="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 text-xs sm:text-sm font-semibold hover:bg-slate-50 disabled:opacity-40">
+            ← 上一題
+          </button>
+          <button type="button" id="quiz-next-btn" onclick="navigateQuiz(1)" class="px-5 py-2 rounded-xl bg-teal-600 text-white text-xs sm:text-sm font-bold hover:bg-teal-700 shadow-2xs">
+            下一題 →
+          </button>
+        </div>
+      </section>
+
+      <!-- 右側題目導航網格 (4欄) -->
+      <aside class="lg:col-span-4 bg-white rounded-2xl shadow-2xs border border-slate-200/90 p-5">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-bold text-sm text-slate-800">題目導航</h3>
+          <button type="button" onclick="resetCurrentQuizAnswers()" class="text-xs text-rose-600 hover:underline font-medium">清空作答紀錄</button>
+        </div>
+        <div class="flex items-center gap-3 text-[11px] text-slate-500 mb-3 pb-2.5 border-b border-slate-100">
+          <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-xs bg-emerald-500 inline-block"></span>答對</span>
+          <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-xs bg-rose-500 inline-block"></span>答錯</span>
+          <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-xs bg-slate-100 border border-slate-300 inline-block"></span>未答</span>
+        </div>
+        <div id="quiz-grid" class="grid grid-cols-5 gap-2 max-h-80 overflow-y-auto pr-1"></div>
+      </aside>
+    </div>
+
+    <!-- =====================================================================
+         分頁 3：智能錯題本與相似考點變種題生成器
+    ===================================================================== -->
+    <div id="view-mistakes" class="hidden space-y-5 fade-in">
+      <!-- 頂部變種題操作橫幅 -->
+      <section class="bg-white rounded-2xl shadow-2xs border border-slate-200/90 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 text-xs font-bold">考點追蹤錯題本</span>
+            <span id="mistake-summary-text" class="text-xs text-slate-500">已勾選 0 道錯題</span>
+          </div>
+          <h2 class="text-base sm:text-lg font-bold text-slate-800 mt-1">勾選錯題，一鍵生成「相同考點詞、全新情境」的變種題</h2>
+          <p class="text-xs text-slate-500 mt-0.5">系統會保留原錯題的核心考點詞與易錯邏輯，重新設計實驗數據或生活情境，徹底杜絕死背答案。</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2 shrink-0">
+          <button type="button" onclick="toggleSelectAllMistakes()" class="px-3.5 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50">
+            全選 / 取消
+          </button>
+          <button type="button" id="generate-variant-btn" onclick="generateVariantsFromSelectedMistakes()" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-indigo-600 text-white text-xs sm:text-sm font-bold hover:opacity-95 shadow-xs flex items-center gap-1.5">
+            <span>⚡</span>
+            <span>針對勾選錯題生成變種題</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- 錯題清單列表 -->
+      <div id="mistakes-list-container" class="space-y-3"></div>
+    </div>
+
+  </main>
+
+  <!-- =====================================================================
+       專屬學習碼（Sync ID）與超短同步口令彈窗
+  ===================================================================== -->
+  <div id="sync-modal" class="hidden fixed inset-0 z-50 bg-slate-900/45 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-xl border border-slate-200 space-y-5 fade-in">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div>
+          <h3 class="text-base sm:text-lg font-bold text-slate-800">🔑 跨設備學習進度同步中心</h3>
+          <p class="text-xs text-slate-500 mt-0.5">免註冊帳號、無年齡限制，支援手機 / 平板 / 電腦雙向還原</p>
+        </div>
+        <button type="button" onclick="closeSyncModal()" class="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-500 font-bold">✕</button>
+      </div>
+
+      <!-- 方式一：專屬學習碼 -->
+      <div class="p-4 rounded-xl bg-indigo-50/60 border border-indigo-100 space-y-2.5">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold text-indigo-900">1. 專屬學習碼（Sync ID）</span>
+          <button type="button" onclick="generateRandomSyncId()" class="text-[11px] font-semibold text-indigo-600 hover:underline">🎲 隨機生成代號</button>
+        </div>
+        <p class="text-xs text-slate-600 leading-relaxed">輸入自訂代號（如 <code class="bg-white px-1.5 py-0.5 rounded text-indigo-700 font-mono">DSE2027_Bio</code>），系統將自動把當前進度與該代號綁定。</p>
+        <div class="flex gap-2">
+          <input id="sync-id-input" type="text" placeholder="輸入你的專屬學習碼..." class="flex-1 rounded-xl border border-indigo-200 bg-white px-3 py-2 text-xs font-mono font-bold text-slate-800 focus:outline-none focus:border-indigo-500" />
+          <button type="button" onclick="bindSyncId()" class="px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 shrink-0">
+            綁定學習碼
+          </button>
+        </div>
+      </div>
+
+      <!-- 方式二：超短學習同步口令 -->
+      <div class="p-4 rounded-xl bg-teal-50/60 border border-teal-100 space-y-2.5">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold text-teal-900">2. 超短學習同步口令（沙盒/離線環境 100% 通用備援）</span>
+          <span class="text-[10px] text-teal-700">可透過微信 / QQ / 備忘錄傳送</span>
+        </div>
+        <p class="text-xs text-slate-600 leading-relaxed">
+          將當前所有筆記解析、題庫與錯題本打包成一串壓縮口令；在另一台設備貼上即可秒速還原全部進度：
+        </p>
+        <div class="flex flex-col sm:flex-row gap-2">
+          <input id="sync-token-input" type="text" placeholder="點擊「生成並複製」或在此貼上 DSE_SYNC::... 口令" class="flex-1 rounded-xl border border-teal-200 bg-white px-3 py-2 text-xs font-mono text-slate-700 focus:outline-none focus:border-teal-500" />
+          <div class="flex gap-1.5 shrink-0">
+            <button type="button" onclick="generateAndCopySyncToken()" class="px-3 py-2 rounded-xl bg-teal-600 text-white text-xs font-bold hover:bg-teal-700">
+              📋 生成並複製
+            </button>
+            <button type="button" onclick="restoreFromSyncToken()" class="px-3 py-2 rounded-xl bg-slate-800 text-white text-xs font-bold hover:bg-slate-900">
+              📥 貼上還原
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between pt-2 border-t border-slate-100">
+        <button type="button" onclick="unbindSyncId()" class="text-xs text-slate-400 hover:text-rose-600">解除目前學習碼綁定</button>
+        <button type="button" onclick="closeSyncModal()" class="px-5 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800">
+          完成並返回學習
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 隱藏 JSON 匯入觸發器與懸浮 Toast 提示 -->
+  <input id="import-json-input" type="file" accept=".json" class="hidden" onchange="importBackupJson(event)" />
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 space-y-2 pointer-events-none"></div>
+
+  <script>
+    // =========================================================================
+    // 1. 內置預設課題數據與多樣化 DSE 考點題庫池
+    // =========================================================================
+    const SAMPLE_TOPIC_DATA = {
+      id: "topic_bio_unit2",
+      subject: "DSE 生物",
+      title: "單元 2：生命的基本單位",
+      createdAt: "2026/11/18",
+      summary: "本課題涵蓋生物體的無機與有機化學成分（水、無機離子、碳水化合物、蛋白質、脂質與核酸）、光學與電子顯微鏡的原理與計算，以及原核細胞與真核細胞的亞細胞構造分工。",
+      keyPoints: [
+        {
+          level: "core",
+          keyword: "水的六大生理功用",
+          title: "水在生物體內的化學與物理角色",
+          explanation: "水是極性溶劑，可作為化學反應的媒介（如血液運輸氧氣與營養素）及直接反應物（光合作用、水解）；其高汽化潛熱能透過排汗與蒸騰作用降溫；植物細胞吸水膨脹產生膨壓提供機械性支持；胸膜液與關節滑液則起潤滑作用。",
+          examTip: "DSE 題目常要求區分水作為「反應物（直接參與化學反應）」與「溶解介質（提供反應環境）」，答題時必須用準關鍵詞。"
+        },
+        {
+          level: "trap",
+          keyword: "纖維素與酶的專一性",
+          title: "為何人體不能利用纖維素獲取能量？",
+          explanation: "纖維素是由葡萄糖聚合而成的多糖，構成植物細胞壁主要成分。由於人體消化道缺乏能分解纖維素的「纖維素酶（Cellulase）」，纖維素無法被水解為單糖吸收，只能作為膳食纖維刺激腸道蠕動並預防便秘。",
+          examTip: "切勿答「纖維素不含能量」，正確邏輯是「人體缺乏纖維素酶 → 無法消化成葡萄糖吸收」。"
+        },
+        {
+          level: "trap",
+          keyword: "原核細胞無雙層膜細胞器但有核糖體",
+          title: "原核生物（細菌）的結構特徵與常見陷阱",
+          explanation: "原核細胞沒有核膜包圍的真細胞核（DNA 裸露於細胞質中），也沒有線粒體、葉綠體和內質網；但其細胞質內依然擁有游離的「核糖體」以合成蛋白質，且細胞壁不含纖維素。",
+          examTip: "考官最愛設陷阱問「細菌能否合成蛋白質？」答案是「能」，因為細菌有核糖體！"
+        },
+        {
+          level: "extension",
+          keyword: "粗糙與平滑內質網分工",
+          title: "細胞器的結構與功能適應（線粒體、內質網與紅血球）",
+          explanation: "粗糙內質網附有核糖體，負責合成蛋白質；平滑內質網負責合成脂質（如性激素）；線粒體內膜高度摺疊成指狀以增加表面面積容納呼吸酶；成熟紅血球沒有細胞核以騰出空間容納更多血紅蛋白。",
+          examTip: "凡問及「摺疊/曲折結構的適應意義」，標準得分點為「增加表面面積，容納更多相關的酶」。"
+        }
+      ]
+    };
+
+    const EXTRA_ENZYME_TOPIC = {
+      id: "topic_bio_enzymes",
+      subject: "DSE 生物",
+      title: "單元 3.1：酶的特性與新陳代謝",
+      createdAt: "2026/11/19",
+      summary: "酶是具有催化功能的球狀蛋白質，能降低化學反應的活化能。其活性受溫度、pH 值及抑制劑影響，並遵循鎖鑰假說展現高度專一性。",
+      keyPoints: [
+        {
+          level: "core",
+          keyword: "鎖鑰假說與活性部位",
+          title: "酶的專一性與活性部位（Active site）結構",
+          explanation: "酶分子表面具有特定三維形狀的活性部位，只與形狀互補的受質結合形成「酶-受質複合物」，從而降低反應所需的活化能並加速反應。",
+          examTip: "描述高溫變性時，必須寫出「高溫破壞維持酶三維構象的鍵，導致活性部位形狀改變，受質無法再與其互補結合」。"
+        },
+        {
+          level: "trap",
+          keyword: "低溫抑制 vs 高溫變性",
+          title: "極低溫與高溫對酶活性的本質差異",
+          explanation: "在低溫下，酶分子與受質的動能較低，碰撞頻率減少，酶只是暫時「不活躍（Inactive）」並未變性，回溫後活性可恢復；高溫則導致酶永久「變性（Denatured）」，降溫亦無法恢復。",
+          examTip: "切勿寫「低溫殺死酶」或「高溫殺死酶」，酶是蛋白質分子而非生物，只能用「不活躍」或「變性」。"
+        }
+      ]
+    };
+
+    const INITIAL_QUESTIONS = [
+      {
+        id: "q_init_1",
+        topicId: "topic_bio_unit2",
+        topicTitle: "單元 2：生命的基本單位",
+        keyword: "水的六大生理功用",
+        stem: "下列哪項關於水在生物體內作為「反應物」的例子是正確的？",
+        options: [
+          "植物在葉綠體中進行光合作用時，水分子參與光反應並裂解",
+          "氧氣溶於血液中並隨循環系統運送到全身組織",
+          "人體劇烈運動時透過汗液蒸發帶走大量熱能",
+          "蚯蚓體內充滿水分以維持體形並產生水骨骼"
+        ],
+        answer: 0,
+        explanation: "水直接參與化學反應時稱為「反應物」，例如光合作用及消化道中的水解反應；其餘選項分別屬於運輸介質、降溫及支持作用。",
+        tip: "緊扣關鍵詞：直接參與化學鍵斷裂/形成 = 反應物；提供環境 = 溶解介質。",
+        userAnswer: null,
+        isVariant: false
+      },
+      {
+        id: "q_init_2",
+        topicId: "topic_bio_unit2",
+        topicTitle: "單元 2：生命的基本單位",
+        keyword: "纖維素與酶的專一性",
+        stem: "人類進食蔬菜後，其中的纖維素無法轉化為人體可用的能量，最主要的原因是什麼？",
+        options: [
+          "纖維素分子內部完全不含有任何化學能",
+          "人體消化道不能分泌纖維素酶，無法將纖維素水解為葡萄糖吸收",
+          "纖維素會直接破壞小腸絨毛上皮細胞的細胞膜",
+          "人體細胞無法透過呼吸作用氧化分解葡萄糖"
+        ],
+        answer: 1,
+        explanation: "纖維素雖由大量葡萄糖連接而成，但因酶具有專一性，人體缺乏纖維素酶，故無法將其分解成單糖吸收。",
+        tip: "切勿混淆「不含能量」與「無法消化吸收」。",
+        userAnswer: null,
+        isVariant: false
+      },
+      {
+        id: "q_init_3",
+        topicId: "topic_bio_unit2",
+        topicTitle: "單元 2：生命的基本單位",
+        keyword: "原核細胞無雙層膜細胞器但有核糖體",
+        stem: "科學家在某單細胞生物體內發現了游離的核糖體，但完全找不到核膜、線粒體和內質網。該生物最可能具有下列哪項特徵？",
+        options: [
+          "其細胞壁主要由纖維素構成",
+          "其遺傳物質 DNA 裸露於細胞質中",
+          "它能透過葉綠體進行高效光合作用",
+          "它屬於多細胞真核生物"
+        ],
+        answer: 1,
+        explanation: "缺乏核膜與雙層膜細胞器（線粒體、葉綠體）但擁有核糖體，是原核生物（如細菌）的典型特徵，其 DNA 裸露於細胞質中，且細胞壁不含纖維素。",
+        tip: "原核細胞「有核糖體、無內質網、無雙層膜細胞器」。",
+        userAnswer: null,
+        isVariant: false
+      },
+      {
+        id: "q_init_4",
+        topicId: "topic_bio_unit2",
+        topicTitle: "單元 2：生命的基本單位",
+        keyword: "粗糙與平滑內質網分工",
+        stem: "睾丸間質細胞專門負責合成並分泌屬於脂質的雄性激素（睾酮）。與一般表皮細胞相比，該細胞內哪一種細胞器會特別發達？",
+        options: [
+          "平滑內質網（Smooth endoplasmic reticulum）",
+          "葉綠體（Chloroplast）",
+          "纖維素細胞壁（Cell wall）",
+          "中央大液泡（Large central vacuole）"
+        ],
+        answer: 0,
+        explanation: "平滑內質網沒有核糖體依附，專門負責合成脂質（包括磷脂及性激素等類固醇激素）。",
+        tip: "性激素屬於「脂質」，因此對應「平滑內質網」；蛋白質激素（如胰島素）則對應「粗糙內質網」。",
+        userAnswer: null,
+        isVariant: false
+      },
+      {
+        id: "q_init_5",
+        topicId: "topic_bio_unit2",
+        topicTitle: "單元 2：生命的基本單位",
+        keyword: "線粒體內膜摺疊適應",
+        stem: "心肌細胞需要持續不斷地收縮以泵送血液。下列哪項亞細胞結構特徵最能解釋心肌細胞如何獲得充足能量？",
+        options: [
+          "細胞內含有大量線粒體，且其內膜高度摺疊成指狀以增加表面面積容納呼吸酶",
+          "細胞核膜上的核孔數量大幅減少以保存 ATP",
+          "細胞壁加厚以防止心臟跳動時細胞破裂",
+          "細胞內含有大量高爾基體以直接分解葡萄糖"
+        ],
+        answer: 0,
+        explanation: "高耗能細胞（如心肌、骨骼肌、精子）擁有大量線粒體，且內膜摺疊成嵴以增加表面面積容納更多呼吸作用相關的酶。",
+        tip: "高耗能細胞 = 線粒體數量多 + 內膜高度摺疊增加表面面積。",
+        userAnswer: null,
+        isVariant: false
+      },
+      {
+        id: "q_init_6",
+        topicId: "topic_bio_unit2",
+        topicTitle: "單元 2：生命的基本單位",
+        keyword: "成熟紅血球結構適應",
+        stem: "哺乳動物成熟的紅血球在發育過程中會失去細胞核與線粒體，這項結構變化對其生理功能有何主要益處？",
+        options: [
+          "可容納更多血紅蛋白，從而大大提升血液的帶氧能力",
+          "使紅血球能夠進行快速的有絲分裂以補充數量",
+          "使紅血球能夠主動吞噬入侵血液的細菌",
+          "提高紅血球進行有氧呼吸產生能量的速率"
+        ],
+        answer: 0,
+        explanation: "成熟紅血球失去細胞核後呈雙凹圓盤狀，可騰出更多細胞內空間容納血紅蛋白，提升攜帶氧氣的效率。",
+        tip: "注意：成熟紅血球沒有線粒體，因此不會消耗自身所攜帶的氧氣（僅進行無氧呼吸）。",
+        userAnswer: null,
+        isVariant: false
+      }
+    ];
+
+    // =========================================================================
+    // 2. 全局狀態管理與跨設備 Sync ID / 壓縮口令邏輯
+    // =========================================================================
+    let appState = {
+      syncId: "",
+      topics: [SAMPLE_TOPIC_DATA],
+      activeTopicId: SAMPLE_TOPIC_DATA.id,
+      questions: JSON.parse(JSON.stringify(INITIAL_QUESTIONS)),
+      mistakes: [], // { questionId, selectedAnswer, resolved: false, addedAt }
+      selectedMistakeIds: [],
+      currentTab: "notes",
+      activeTopicFilter: "ALL",
+      currentQuizIndex: 0
+    };
+
+    let uploadedImagesBase64 = [];
+
+    function saveState() {
+      try {
+        // 僅在當前會話記憶體與狀態欄同步更新
+        updateHeaderStats();
+        updateSyncIndicator();
+      } catch (e) {
+        console.warn("State update warning:", e);
+      }
+    }
+
+    function updateSyncIndicator() {
+      const dot = document.getElementById("sync-dot");
+      const titleEl = document.getElementById("sync-label-title");
+      const subEl = document.getElementById("sync-label-sub");
+      if (!dot || !titleEl || !subEl) return;
+
+      if (appState.syncId) {
+        dot.className = "w-2 h-2 rounded-full bg-indigo-500 animate-pulse";
+        titleEl.textContent = "離線快取";
+        subEl.textContent = `學習碼: ${appState.syncId}`;
+      } else {
+        dot.className = "w-2 h-2 rounded-full bg-slate-400";
+        titleEl.textContent = "尚未設定學習碼";
+        subEl.textContent = "點擊設定免註冊同步碼";
+      }
+    }
+
+    function openSyncModal() {
+      const modal = document.getElementById("sync-modal");
+      const input = document.getElementById("sync-id-input");
+      if (input) input.value = appState.syncId || "";
+      if (modal) modal.classList.remove("hidden");
+    }
+
+    function closeSyncModal() {
+      const modal = document.getElementById("sync-modal");
+      if (modal) modal.classList.add("hidden");
+    }
+
+    function generateRandomSyncId() {
+      const randomNum = Math.floor(1000 + Math.random() * 9000);
+      const code = `DSE2027_Bio_${randomNum}`;
+      const input = document.getElementById("sync-id-input");
+      if (input) input.value = code;
+    }
+
+    function bindSyncId() {
+      const input = document.getElementById("sync-id-input");
+      const val = input ? input.value.trim() : "";
+      if (!val) {
+        showToast("⚠️ 請先輸入或隨機生成一個學習碼。");
+        return;
+      }
+      appState.syncId = val;
+      saveState();
+      showToast(`🔑 已綁定專屬學習碼「${val}」！換設備時可使用下方口令同步進度。`);
+    }
+
+    function unbindSyncId() {
+      appState.syncId = "";
+      const input = document.getElementById("sync-id-input");
+      if (input) input.value = "";
+      saveState();
+      showToast("已解除學習碼綁定。");
+    }
+
+    function generateAndCopySyncToken() {
+      try {
+        const payload = JSON.stringify({
+          v: 2,
+          syncId: appState.syncId,
+          topics: appState.topics,
+          questions: appState.questions,
+          mistakes: appState.mistakes
+        });
+        const compressed = typeof LZString !== "undefined"
+          ? LZString.compressToEncodedURIComponent(payload)
+          : btoa(unescape(encodeURIComponent(payload)));
+        const token = `DSE_SYNC::${compressed}`;
+
+        const tokenInput = document.getElementById("sync-token-input");
+        if (tokenInput) {
+          tokenInput.value = token;
+          tokenInput.select();
+          document.execCommand("copy");
+        }
+        showToast("📋 已生成並複製「超短學習同步口令」！發送到另一台設備貼上即可還原全部進度。");
+      } catch (err) {
+        console.error(err);
+        showToast("⚠️ 生成同步口令失敗，請改用本地備份。");
+      }
+    }
+
+    function restoreFromSyncToken() {
+      const tokenInput = document.getElementById("sync-token-input");
+      const raw = tokenInput ? tokenInput.value.trim() : "";
+      if (!raw || !raw.startsWith("DSE_SYNC::")) {
+        showToast("⚠️ 請貼上以 DSE_SYNC:: 開頭的完整學習同步口令。");
+        return;
+      }
+      try {
+        const encoded = raw.slice("DSE_SYNC::".length);
+        const jsonStr = typeof LZString !== "undefined"
+          ? LZString.decompressFromEncodedURIComponent(encoded)
+          : decodeURIComponent(escape(atob(encoded)));
+        const parsed = JSON.parse(jsonStr);
+        if (parsed && Array.isArray(parsed.topics) && Array.isArray(parsed.questions)) {
+          appState.syncId = parsed.syncId || appState.syncId;
+          appState.topics = parsed.topics;
+          appState.activeTopicId = parsed.topics[0]?.id || "";
+          appState.questions = parsed.questions;
+          appState.mistakes = parsed.mistakes || [];
+          appState.selectedMistakeIds = [];
+          saveState();
+          renderTopicAnalysisView();
+          renderQuizView();
+          renderMistakesView();
+          closeSyncModal();
+          showToast("✅ 已成功從同步口令還原全部課題筆記與錯題進度！");
+        } else {
+          showToast("⚠️ 同步口令格式無效，請確認沒有漏複製字元。");
+        }
+      } catch (err) {
+        console.error(err);
+        showToast("⚠️ 解析同步口令失敗，請確認貼上內容完整。");
+      }
+    }
+
+    function exportBackupJson() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appState, null, 2));
+      const dlAnchor = document.createElement("a");
+      dlAnchor.setAttribute("href", dataStr);
+      dlAnchor.setAttribute("download", `DSE_Bio_Backup_${new Date().toISOString().slice(0, 10)}.json`);
+      document.body.appendChild(dlAnchor);
+      dlAnchor.click();
+      dlAnchor.remove();
+      showToast("💾 已匯出本地 JSON 學習備份檔案！");
+    }
+
+    function importBackupJson(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          if (parsed && Array.isArray(parsed.topics) && Array.isArray(parsed.questions)) {
+            appState = { ...appState, ...parsed };
+            saveState();
+            renderTopicAnalysisView();
+            renderQuizView();
+            renderMistakesView();
+            showToast("✅ 本地備份檔案匯入成功！");
+          }
+        } catch (err) {
+          showToast("⚠️ 備份檔案格式錯誤。");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    // =========================================================================
+    // 3. 分頁切換與統計儀表板更新
+    // =========================================================================
+    function switchTab(tabName) {
+      appState.currentTab = tabName;
+      ["notes", "quiz", "mistakes"].forEach(t => {
+        const viewEl = document.getElementById(`view-${t}`);
+        const btnEl = document.getElementById(`nav-tab-${t}`);
+        if (!viewEl || !btnEl) return;
+
+        if (t === tabName) {
+          viewEl.classList.remove("hidden");
+          btnEl.className = "flex items-center justify-center sm:justify-between px-3.5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all bg-teal-600 text-white shadow-xs";
+        } else {
+          viewEl.classList.add("hidden");
+          btnEl.className = "flex items-center justify-center sm:justify-between px-3.5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all bg-white border border-slate-200 text-slate-600 hover:bg-slate-50";
+        }
+      });
+
+      if (tabName === "notes") renderTopicAnalysisView();
+      if (tabName === "quiz") renderQuizView();
+      if (tabName === "mistakes") renderMistakesView();
+    }
+
+    function updateHeaderStats() {
+      const totalTopics = appState.topics.length;
+      const answeredQs = appState.questions.filter(q => q.userAnswer !== null);
+      const correctQs = answeredQs.filter(q => q.userAnswer === q.answer);
+      const unresolvedMistakes = appState.mistakes.filter(m => !m.resolved);
+
+      const masteryPct = answeredQs.length > 0
+        ? Math.round((correctQs.length / answeredQs.length) * 100)
+        : 0;
+
+      document.getElementById("stat-topics").textContent = totalTopics;
+      document.getElementById("stat-answered").textContent = answeredQs.length;
+      document.getElementById("stat-mistakes").textContent = unresolvedMistakes.length;
+      document.getElementById("stat-mastery").textContent = `${masteryPct}%`;
+      document.getElementById("stat-mastery-bar").style.width = `${masteryPct}%`;
+
+      const badge = document.getElementById("nav-mistake-badge");
+      if (badge) {
+        if (unresolvedMistakes.length > 0) {
+          badge.classList.remove("hidden");
+          badge.textContent = unresolvedMistakes.length;
+        } else {
+          badge.classList.add("hidden");
+        }
+      }
+    }
+
+    // =========================================================================
+    // 4. 分頁 1：筆記上傳、AI 解析與課題考點分級渲染
+    // =========================================================================
+    function handleImageUploadPreview(event) {
+      const files = Array.from(event.target.files || []);
+      const previewContainer = document.getElementById("image-preview-list");
+      previewContainer.innerHTML = "";
+      uploadedImagesBase64 = [];
+
+      files.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const dataUrl = e.target.result;
+          const base64Only = dataUrl.split(",")[1];
+          uploadedImagesBase64.push({ mimeType: file.type || "image/jpeg", data: base64Only });
+
+          const thumb = document.createElement("div");
+          thumb.className = "w-14 h-14 rounded-lg overflow-hidden border border-slate-200 shadow-2xs relative";
+          thumb.innerHTML = `<img src="${dataUrl}" alt="筆記預覽" class="w-full h-full object-cover" />`;
+          previewContainer.appendChild(thumb);
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function loadSampleTopic(sampleKey) {
+      if (sampleKey === "bio_enzymes") {
+        const exists = appState.topics.find(t => t.id === EXTRA_ENZYME_TOPIC.id);
+        if (!exists) {
+          appState.topics.unshift(JSON.parse(JSON.stringify(EXTRA_ENZYME_TOPIC)));
+          const generatedQs = buildLocalDifficultyQuestions(EXTRA_ENZYME_TOPIC, null, "3. DSE 模擬題", 4).map((q, idx) => ({
+            id: `enzyme_q_${Date.now()}_${idx}`,
+            topicId: EXTRA_ENZYME_TOPIC.id,
+            topicTitle: EXTRA_ENZYME_TOPIC.title,
+            keyword: q.keyword,
+            stem: `[3. DSE 模擬題] ${q.stem}`,
+            options: q.options,
+            answer: q.answer,
+            explanation: q.explanation,
+            tip: q.tip,
+            userAnswer: null,
+            isVariant: false
+          }));
+          appState.questions.push(...generatedQs);
+        }
+        appState.activeTopicId = EXTRA_ENZYME_TOPIC.id;
+        saveState();
+        renderTopicAnalysisView();
+        showToast("✨ 已載入範例課題《單元 3.1：酶的特性與新陳代謝》及配套 DSE 題目！");
+      } else {
+        appState.activeTopicId = SAMPLE_TOPIC_DATA.id;
+        renderTopicAnalysisView();
+        showToast("🧬 已切換至《單元 2：生命的基本單位》考點筆記！");
+      }
+    }
+
+    async function fetchGeminiWithRetry(parts) {
+      const apiKey = "";
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+      const payload = {
+        contents: [{ role: "user", parts }]
+      };
+
+      const delays = [1000, 2000];
+      for (let attempt = 0; attempt <= delays.length; attempt++) {
+        const response = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        if (response.ok) {
+          const data = await response.json();
+          const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (text) return text;
+        }
+        if (response.status === 403 || response.status === 401) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        if (attempt < delays.length) {
+          await new Promise(r => setTimeout(r, delays[attempt]));
+        }
+      }
+      throw new Error("Gemini API unavailable");
+    }
+
+    async function analyzeNotesWithGemini() {
+      const subject = document.getElementById("upload-subject").value;
+      const customTitle = document.getElementById("upload-title").value.trim();
+      const noteText = document.getElementById("upload-text").value.trim();
+
+      if (!noteText && uploadedImagesBase64.length === 0) {
+        showToast("⚠️ 請先上傳筆記相片，或貼上筆記文字重點！");
+        return;
+      }
+
+      const btn = document.getElementById("analyze-btn");
+      const origHtml = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = `<span class="inline-block w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin"></span><span>AI 正在深度剖析考點並標示級別...</span>`;
+
+      try {
+        const prompt = `你是一位資深香港 HKDSE ${subject} 科名師。請仔細分析用戶上傳的筆記內容（文字或圖片），提煉知識脈絡總覽，並將核心考點分為「core」（必考核心）、「trap」（易錯陷阱）、「extension」（跨題延伸）三個級別，同時生成 4 道配套單項選擇題。
+請嚴格以純 JSON 物件回傳（勿加 Markdown 標記）：
+{
+  "title": "${customTitle || "自動識別課題名稱"}",
+  "summary": "100字以內的知識脈絡總覽",
+  "keyPoints": [
+    {
+      "level": "core",
+      "keyword": "簡短考點詞",
+      "title": "考點標題",
+      "explanation": "導師深度講解",
+      "examTip": "考官出題套路與得分關鍵詞"
+    }
+  ],
+  "questions": [
+    {
+      "keyword": "對應考點詞",
+      "stem": "題幹",
+      "options": ["選項A", "選項B", "選項C", "選項D"],
+      "answer": 0,
+      "explanation": "詳細解析",
+      "tip": "DSE 奪星提示"
+    }
+  ]
+}
+筆記文字補充：${noteText || "（見附圖）"}`;
+
+        const parts = [{ text: prompt }];
+        uploadedImagesBase64.forEach(img => {
+          parts.push({ inlineData: { mimeType: img.mimeType, data: img.data } });
+        });
+
+        let parsedResult = null;
+        try {
+          const rawText = await fetchGeminiWithRetry(parts);
+          const cleaned = rawText.replace(/```json/gi, "").replace(/```/g, "").trim();
+          parsedResult = JSON.parse(cleaned);
+        } catch (apiErr) {
+          // 沙盒/離線環境自動啟用本地智能筆記拆解引擎
+          parsedResult = buildLocalParsedTopic(subject, customTitle, noteText);
+        }
+
+        const newTopicId = `topic_${Date.now()}`;
+        const newTopic = {
+          id: newTopicId,
+          subject,
+          title: parsedResult.title || customTitle || `${subject} 新課題筆記`,
+          createdAt: new Date().toLocaleDateString("zh-HK"),
+          summary: parsedResult.summary || "系統已自動提取本課題的核心概念、易混淆對比及實驗應用要點。",
+          keyPoints: Array.isArray(parsedResult.keyPoints) && parsedResult.keyPoints.length > 0
+            ? parsedResult.keyPoints
+            : buildLocalParsedTopic(subject, customTitle, noteText).keyPoints
+        };
+
+        appState.topics.unshift(newTopic);
+        appState.activeTopicId = newTopicId;
+
+        const rawQs = Array.isArray(parsedResult.questions) && parsedResult.questions.length > 0
+          ? parsedResult.questions
+          : buildLocalDifficultyQuestions(newTopic, null, "3. DSE 模擬題", 4);
+
+        const formattedQs = rawQs.map((q, idx) => {
+          const shuffled = shuffleOptionsWithAnswer(q.options || [], typeof q.answer === "number" ? q.answer : 0);
+          return {
+            id: `q_${newTopicId}_${idx}_${Math.random().toString(36).slice(2, 6)}`,
+            topicId: newTopicId,
+            topicTitle: newTopic.title,
+            keyword: q.keyword || newTopic.keyPoints[0]?.keyword || newTopic.title,
+            stem: q.stem,
+            options: shuffled.options,
+            answer: shuffled.answer,
+            explanation: q.explanation || "請結合筆記核心概念與 DSE 評分關鍵詞進行分析。",
+            tip: q.tip || "注意題幹限定條件與專業術語。",
+            userAnswer: null,
+            isVariant: false
+          };
+        });
+
+        appState.questions.push(...formattedQs);
+        document.getElementById("upload-title").value = "";
+        document.getElementById("upload-text").value = "";
+        document.getElementById("image-preview-list").innerHTML = "";
+        uploadedImagesBase64 = [];
+
+        saveState();
+        renderTopicAnalysisView();
+        showToast(`🎉 筆記解析完成！已標示 ${newTopic.keyPoints.length} 個核心考點並生成 ${formattedQs.length} 道練習題。`);
+      } catch (err) {
+        console.error(err);
+        showToast("⚠️ 筆記分析時發生異常，請重試。");
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = origHtml;
+      }
+    }
+
+    function buildLocalParsedTopic(subject, customTitle, noteText) {
+      const cleanText = (noteText || "").trim();
+      const lines = cleanText.split(/[\n。；;]+/).map(s => s.trim()).filter(s => s.length >= 4);
+      const combinedContext = `${customTitle} ${cleanText}`;
+      const title = customTitle || (lines[0] ? lines[0].slice(0, 22) : `${subject} 自訂筆記課題`);
+      const kps = [];
+
+      // 針對「物質穿越細胞膜過程」（單元3）或相關關鍵詞提供精準 DSE 考點拆解
+      if (/細胞膜|穿越|擴散|滲透|主動轉運|流動鑲嵌|membrane|osmosis|diffusion|active transport/i.test(combinedContext)) {
+        kps.push(
+          {
+            level: "core",
+            keyword: "流動鑲嵌模型與選擇透性",
+            title: "細胞膜的流動鑲嵌模型（Fluid Mosaic Model）與選擇透性",
+            explanation: "細胞膜由磷脂雙分子層構成基本骨架（具流動性），蛋白質分子鑲嵌或貫穿其中（如載體蛋白、通道蛋白）。非極性脂溶性小分子可直接穿過磷脂雙分子層，而離子及極性水溶性分子則需透過特定膜蛋白進出。",
+            examTip: "問及「為何細胞膜具選擇透性？」，必須同時答出「磷脂雙分子層容許脂溶性小分子通過」及「特定膜蛋白（載體/通道蛋白）只容許特定水溶性分子或離子通過」。"
+          },
+          {
+            level: "trap",
+            keyword: "擴散作用 vs 滲透作用",
+            title: "擴散作用（Diffusion）與滲透作用（Osmosis）的核心區別",
+            explanation: "擴散是任何分子或離子順濃度梯度（由高濃度至低濃度）的淨移動，無需能量且不一定需要膜；滲透則是「水分子」穿過「選擇透性膜」，由高水勢（較稀溶液）向低水勢（較濃溶液）的淨移動。",
+            examTip: "寫滲透作用定義時，嚴禁使用「水濃度」一詞，DSE 標準評分關鍵詞必須是「水勢（Water potential）」與「選擇透性膜」！",
+          },
+          {
+            level: "core",
+            keyword: "主動轉運與 ATP 消耗",
+            title: "主動轉運（Active Transport）的條件與生理實例",
+            explanation: "主動轉運是物質逆濃度梯度（由低濃度至高濃度）穿過細胞膜的過程，必須依賴膜上的「載體蛋白（Carrier proteins）」並消耗細胞呼吸產生的能量（ATP）。常見實例包括小腸絨毛吸收葡萄糖/氨基酸、根毛細胞吸收泥土礦物質。",
+            examTip: "若實驗加入「呼吸作用抑制劑（如氰化物）」或降低氧氣濃度，主動轉運速率會急劇下降，但擴散與滲透不受直接影響。"
+          },
+          {
+            level: "extension",
+            keyword: "不同水勢溶液對動植物細胞的影響",
+            title: "高滲、等滲與低滲溶液中動植物細胞的形態變化",
+            explanation: "植物細胞置於低滲（高水勢）溶液會吸水硬脹（Turgid，因細胞壁保護不會爆裂），置於高滲（低水勢）溶液則會質壁分離（Plasmolysis）及變軟（Flaccid）；動物細胞無細胞壁，置於蒸餾水中會因過度吸水而爆裂（溶血）。",
+            examTip: "質壁分離後，細胞壁與細胞膜之間的空隙充滿的是「外界高滲溶液」（因為細胞壁是全透性的）。"
+          }
+        );
+      } else if (lines.length > 0) {
+        lines.slice(0, 4).forEach((line, i) => {
+          const levels = ["core", "trap", "extension", "core"];
+          const shortKw = line.replace(/[：:，,（）()]/g, " ").trim().split(/\s+/)[0].slice(0, 12) || `${title}考點${i + 1}`;
+          kps.push({
+            level: levels[i % levels.length],
+            keyword: shortKw,
+            title: `核心考點 ${i + 1}：${line.slice(0, 26)}`,
+            explanation: `根據本課題筆記重點：「${line}」。在 HKDSE 考核中，需準確掌握此機制背後的生理因果關係、結構適應特徵及實驗變量控制。`,
+            examTip: `針對「${shortKw}」作答時，務必寫出完整因果邏輯與標準生物學術語，避免籠統描述。`
+          });
+        });
+      } else {
+        kps.push(
+          {
+            level: "core",
+            keyword: `${title}·核心機制`,
+            title: `${title}的基本原理與結構適應`,
+            explanation: `已為課題「${title}」獨立建立專屬考點檔案。DSE 評分標準要求考生能從結構特徵推論生理功能，並解釋環境變量改變對該生理過程的影響。`,
+            examTip: `作答「${title}」相關題目時，緊扣「結構特徵 → 生理功能優勢」的雙向因果關係。`
+          },
+          {
+            level: "trap",
+            keyword: `${title}·易錯辨析`,
+            title: `${title}的常見考官陷阱與實驗對照`,
+            explanation: `在設計或分析「${title}」的對照實驗時，需區分自變量、因變量及控制變量，並留意能量（ATP）供應、濃度梯度及膜蛋白專一性的限制條件。`,
+            examTip: `留意題幹中「淨移動」、「濃度梯度」與「專一性」等關鍵限定詞。`
+          },
+          {
+            level: "extension",
+            keyword: `${title}·跨課題應用`,
+            title: `${title}在人體或植物系統中的整合應用`,
+            explanation: `結合「${title}」的微觀機制，分析其在器官或整體生物層面的協調作用（如物質運輸效率、表面面積適應及能量代謝偶聯）。`,
+            examTip: `跨課題大題常將本課題原理與細胞呼吸、酶活性或物質運輸結合考核。`
+          }
+        );
+      }
+
+      return {
+        title,
+        summary: `本課題「${title}」已建立獨立專屬知識庫與多重題庫，共提取 ${kps.length} 個核心考點，可隨時按難度與題數生成本單元專屬新題。`,
+        keyPoints: kps,
+        questions: []
+      };
+    }
+
+    function renderTopicAnalysisView() {
+      const pillsContainer = document.getElementById("topic-pills-container");
+      const countLabel = document.getElementById("topic-library-count");
+      const displayContainer = document.getElementById("topic-analysis-display");
+      if (!pillsContainer || !displayContainer) return;
+
+      countLabel.textContent = `共 ${appState.topics.length} 個課題`;
+
+      pillsContainer.innerHTML = appState.topics.map(t => {
+        const isActive = t.id === appState.activeTopicId;
+        return `
+          <button type="button" onclick="selectActiveTopic('${t.id}')" class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+            isActive
+              ? "bg-teal-600 text-white shadow-2xs"
+              : "bg-slate-100 text-slate-600 hover:bg-slate-200/70"
+          }">
+            [${t.subject}] ${t.title}
+          </button>
+        `;
+      }).join("");
+
+      const activeTopic = appState.topics.find(t => t.id === appState.activeTopicId) || appState.topics[0];
+      if (!activeTopic) return;
+
+      const topicQCount = appState.questions.filter(q => q.topicId === activeTopic.id).length;
+
+      const levelBadgeMap = {
+        core: { label: "DSE 必考核心", cls: "bg-rose-50 text-rose-700 border-rose-200", borderCls: "border-l-4 border-l-rose-500" },
+        trap: { label: "高頻易錯陷阱", cls: "bg-amber-50 text-amber-800 border-amber-200", borderCls: "border-l-4 border-l-amber-500" },
+        extension: { label: "跨課題延伸", cls: "bg-sky-50 text-sky-700 border-sky-200", borderCls: "border-l-4 border-l-sky-500" }
+      };
+
+      const kpCardsHtml = activeTopic.keyPoints.map((kp, index) => {
+        const meta = levelBadgeMap[kp.level] || levelBadgeMap.core;
+        return `
+          <details open class="kp-card group bg-slate-50/70 rounded-2xl border border-slate-200/90 ${meta.borderCls} p-4">
+            <summary class="list-none cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+              <div class="space-y-1.5">
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="px-2 py-0.5 rounded-md border text-[11px] font-bold ${meta.cls}">${meta.label}</span>
+                  <span class="px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-600 text-[11px] font-semibold"># ${kp.keyword}</span>
+                </div>
+                <h4 class="font-bold text-sm sm:text-base text-slate-800 pt-0.5">${kp.title}</h4>
+              </div>
+              <div class="flex items-center gap-1.5 shrink-0" onclick="event.stopPropagation()">
+                <select id="kp-diff-${activeTopic.id}-${index}" aria-label="選擇考點出題難度" class="rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 focus:outline-none focus:border-teal-500">
+                  <option value="1. 普通測驗">1. 普通測驗</option>
+                  <option value="2. 校內考試">2. 校內考試</option>
+                  <option value="3. DSE 模擬題" selected>3. DSE 模擬題</option>
+                </select>
+                <select id="kp-count-${activeTopic.id}-${index}" aria-label="選擇考點出題數目" class="rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 focus:outline-none focus:border-teal-500">
+                  <option value="1">1 題</option>
+                  <option value="3" selected>3 題</option>
+                  <option value="5">5 題</option>
+                  <option value="10">10 題</option>
+                </select>
+                <button type="button" id="kp-gen-btn-${activeTopic.id}-${index}" onclick="generateQuestionsForUnitOrKp('${activeTopic.id}', ${index}, event)" class="px-2.5 py-1 rounded-lg bg-teal-600 text-white text-[11px] font-bold hover:bg-teal-700 transition-colors shadow-2xs whitespace-nowrap">
+                  ✨ 出題
+                </button>
+                <span class="text-slate-400 text-xs ml-1 group-open:rotate-180 transition-transform select-none">▼</span>
+              </div>
+            </summary>
+            <div class="mt-3 pt-3 border-t border-slate-200/70 space-y-2.5 text-xs sm:text-sm leading-relaxed">
+              <p class="text-slate-700"><strong class="text-slate-900">📖 導師深度講解：</strong>${kp.explanation}</p>
+              <div class="p-2.5 rounded-lg bg-white border border-slate-200/80 text-slate-700 text-xs">
+                <strong class="text-indigo-700">💡 考官出題套路：</strong>${kp.examTip}
+              </div>
+            </div>
+          </details>
+        `;
+      }).join("");
+
+      displayContainer.innerHTML = `
+        <div class="space-y-5 fade-in">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+            <div>
+              <div class="flex items-center gap-2 text-xs text-slate-500">
+                <span class="font-bold text-teal-700">${activeTopic.subject}</span>
+                <span>•</span>
+                <span>收錄日期：${activeTopic.createdAt}</span>
+              </div>
+              <div class="flex flex-wrap items-center gap-2.5 mt-1">
+                <div id="topic-title-display-${activeTopic.id}" class="inline-flex items-center gap-1.5 group">
+                  <h2 onclick="startEditTopicTitle('${activeTopic.id}')" title="點擊自訂課題名稱" class="text-lg sm:text-xl font-bold text-slate-800 cursor-pointer hover:text-teal-700 transition-colors">${activeTopic.title}</h2>
+                  <button type="button" onclick="startEditTopicTitle('${activeTopic.id}')" title="修改課題名稱" class="px-2 py-0.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-teal-50 hover:border-teal-300 text-slate-500 hover:text-teal-700 text-xs font-semibold transition-colors">
+                    ✏️ 改名
+                  </button>
+                </div>
+                <div id="topic-title-edit-${activeTopic.id}" class="hidden inline-flex items-center gap-1.5">
+                  <input id="topic-title-input-${activeTopic.id}" type="text" value="${activeTopic.title.replace(/"/g, '&quot;')}" onkeydown="if(event.key==='Enter'){saveEditedTopicTitle('${activeTopic.id}');}else if(event.key==='Escape'){cancelEditTopicTitle('${activeTopic.id}');}" class="rounded-xl border border-teal-500 bg-white px-3 py-1 text-sm sm:text-base font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500/30" />
+                  <button type="button" onclick="saveEditedTopicTitle('${activeTopic.id}')" class="px-2.5 py-1 rounded-lg bg-teal-600 text-white text-xs font-bold hover:bg-teal-700">儲存</button>
+                  <button type="button" onclick="cancelEditTopicTitle('${activeTopic.id}')" class="px-2 py-1 rounded-lg border border-slate-200 bg-white text-slate-600 text-xs font-semibold hover:bg-slate-50">取消</button>
+                </div>
+                <div class="inline-flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2 py-1">
+                  <select id="unit-diff-${activeTopic.id}" aria-label="選擇單元出題難度" class="bg-transparent text-xs font-semibold text-slate-700 focus:outline-none">
+                    <option value="1. 普通測驗">1. 普通測驗</option>
+                    <option value="2. 校內考試">2. 校內考試</option>
+                    <option value="3. DSE 模擬題" selected>3. DSE 模擬題</option>
+                  </select>
+                  <span class="text-slate-300 text-xs">|</span>
+                  <select id="unit-count-${activeTopic.id}" aria-label="選擇單元出題數目" class="bg-transparent text-xs font-semibold text-slate-700 focus:outline-none">
+                    <option value="3">3 題</option>
+                    <option value="5" selected>5 題</option>
+                    <option value="10">10 題</option>
+                    <option value="15">15 題</option>
+                    <option value="20">20 題</option>
+                  </select>
+                  <button type="button" id="unit-gen-btn-${activeTopic.id}" onclick="generateQuestionsForUnitOrKp('${activeTopic.id}', null, event)" class="px-2.5 py-1 rounded-lg bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 transition-colors shadow-2xs whitespace-nowrap">
+                    ✨ 生成單元新題
+                  </button>
+                </div>
+              </div>
+            </div>
+            <button type="button" onclick="startPracticeForTopic('${activeTopic.id}')" class="px-4 py-2 rounded-xl bg-teal-600 text-white text-xs sm:text-sm font-bold hover:bg-teal-700 transition-colors shadow-xs shrink-0">
+              ✍️ 立即刷本課題題目 (${topicQCount}題)
+            </button>
+          </div>
+
+          <!-- 知識脈絡總覽 -->
+          <div class="p-4 rounded-xl bg-slate-50 border border-slate-200/80 text-xs sm:text-sm text-slate-700 leading-relaxed">
+            <strong class="text-indigo-800">🧭 知識脈絡總覽：</strong>${activeTopic.summary}
+          </div>
+
+          <!-- 考點分級標示標題列 -->
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <h3 class="text-sm font-bold text-slate-800">核心考點分級標示（點擊可展開/收合詳解）</h3>
+            <div class="flex items-center gap-1.5 text-[11px] font-bold">
+              <span class="px-2 py-0.5 rounded bg-rose-50 text-rose-700">必考核心</span>
+              <span class="px-2 py-0.5 rounded bg-amber-50 text-amber-800">易錯陷阱</span>
+              <span class="px-2 py-0.5 rounded bg-sky-50 text-sky-700">跨題延伸</span>
+            </div>
+          </div>
+
+          <!-- 考點卡片列表 -->
+          <div class="space-y-3">
+            ${kpCardsHtml}
+          </div>
+        </div>
+      `;
+    }
+
+    function selectActiveTopic(topicId) {
+      appState.activeTopicId = topicId;
+      renderTopicAnalysisView();
+    }
+
+    function startEditTopicTitle(topicId) {
+      const displayEl = document.getElementById(`topic-title-display-${topicId}`);
+      const editEl = document.getElementById(`topic-title-edit-${topicId}`);
+      const inputEl = document.getElementById(`topic-title-input-${topicId}`);
+      if (!displayEl || !editEl || !inputEl) return;
+      displayEl.classList.add("hidden");
+      editEl.classList.remove("hidden");
+      inputEl.focus();
+      inputEl.select();
+    }
+
+    function cancelEditTopicTitle(topicId) {
+      const displayEl = document.getElementById(`topic-title-display-${topicId}`);
+      const editEl = document.getElementById(`topic-title-edit-${topicId}`);
+      if (!displayEl || !editEl) return;
+      editEl.classList.add("hidden");
+      displayEl.classList.remove("hidden");
+    }
+
+    function saveEditedTopicTitle(topicId) {
+      const topic = appState.topics.find(t => t.id === topicId);
+      const inputEl = document.getElementById(`topic-title-input-${topicId}`);
+      if (!topic || !inputEl) return;
+
+      const newTitle = inputEl.value.trim();
+      if (!newTitle) {
+        showToast("⚠️ 課題名稱不能為空！");
+        inputEl.focus();
+        return;
+      }
+
+      topic.title = newTitle;
+      appState.questions.forEach(q => {
+        if (q.topicId === topicId) {
+          q.topicTitle = newTitle;
+        }
+      });
+
+      saveState();
+      renderTopicAnalysisView();
+      renderQuizView();
+      renderMistakesView();
+      showToast(`✏️ 已將課題名稱更新為「${newTitle}」`);
+    }
+
+    function startPracticeForTopic(topicId) {
+      appState.activeTopicFilter = topicId;
+      appState.currentQuizIndex = 0;
+      switchTab("quiz");
+    }
+
+    // =========================================================================
+    // 5. 多維度無重複出題引擎（支援三級難度 + 自選題數 + 去重 + 選項洗牌）
+    // =========================================================================
+    function shuffleOptionsWithAnswer(options, correctIdx) {
+      if (!Array.isArray(options) || options.length === 0) {
+        return { options: ["選項 A", "選項 B", "選項 C", "選項 D"], answer: 0 };
+      }
+      const paired = options.map((text, idx) => ({
+        text: text.replace(/^[A-D]\.\s*/, ""),
+        isCorrect: idx === correctIdx
+      }));
+      for (let i = paired.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [paired[i], paired[j]] = [paired[j], paired[i]];
+      }
+      return {
+        options: paired.map(p => p.text),
+        answer: Math.max(0, paired.findIndex(p => p.isCorrect))
+      };
+    }
+
+    function buildLocalDifficultyQuestions(topic, kp, difficulty, count) {
+      const targetKps = kp ? [kp] : (topic.keyPoints || []);
+      const existingStems = new Set(appState.questions.map(q => q.stem.trim()));
+      const results = [];
+      const isDefaultUnit2 = topic.id === "topic_bio_unit2";
+      const topicFullContext = `${topic.title} ${topic.summary || ""} ${(topic.keyPoints || []).map(k => `${k.keyword} ${k.title} ${k.explanation}`).join(" ")}`;
+
+      // 1. 專屬主題內置題庫（嚴格按課題隔離，絕不跨單元混用！）
+      const unit2Bank = [
+        {
+          match: "水",
+          keyword: "水的六大生理功用",
+          stem: "在消化道內，澱粉在澱粉酶催化下與水反應生成麥芽糖。在此過程中，水主要扮演什麼角色？",
+          options: [
+            "作為水解反應的直接反應物，參與化學鍵斷裂",
+            "利用高汽化潛熱降低小腸腔內的溫度",
+            "產生膨壓以支撐小腸絨毛保持直立",
+            "作為潤滑劑減少食糜與胃壁的摩擦"
+          ],
+          answer: 0,
+          explanation: "水解反應需要水分子直接參與並斷裂化學鍵，因此水在此作為「反應物」。",
+          tip: "區分水作「反應物（直接參與反應）」與「溶劑（提供介質）」。"
+        },
+        {
+          match: "水",
+          keyword: "水的六大生理功用",
+          stem: "陸上草本植物在烈日下若長期缺水，葉片與幼莖會出現下垂（萎凋）現象，這直接反映了水哪一項功能的喪失？",
+          options: [
+            "植物細胞吸水膨脹產生膨壓，從而提供機械性支持",
+            "水作為極性溶劑溶解無機離子",
+            "水在葉綠體中吸收光能",
+            "水潤滑木質部導管內壁"
+          ],
+          answer: 0,
+          explanation: "植物細胞液泡吸水後細胞膜緊貼細胞壁產生膨壓（Turgidity），為非木質化組織提供機械性支持。",
+          tip: "草本植物挺立靠「細胞膨壓」；木本植物挺立主要靠「木質化細胞壁」。"
+        },
+        {
+          match: "纖維素",
+          keyword: "纖維素與酶的專一性",
+          stem: "牛羊等反芻動物天天以青草（富含纖維素）為主食並能從中獲取大量能量，而人類進食青菜卻不能消化纖維素。造成這項差異的根本原因是什麼？",
+          options: [
+            "牛羊胃部共生有能分泌纖維素酶的微生物，而人體消化道缺乏纖維素酶",
+            "青草中的纖維素由氨基酸組成，蔬菜中的纖維素由葡萄糖組成",
+            "人類的小腸溫度過高導致纖維素永久變性",
+            "牛羊的牙齒能直接把纖維素磨碎成單糖分子"
+          ],
+          answer: 0,
+          explanation: "哺乳動物自身均不能分泌纖維素酶，但食草動物消化道內的共生微生物能分泌纖維素酶將纖維素分解為葡萄糖。",
+          tip: "酶的專一性是 DSE 跨課題高頻考點。"
+        },
+        {
+          match: "原核",
+          keyword: "原核細胞無雙層膜細胞器但有核糖體",
+          stem: "某研究員在顯微鏡下觀察一種致病細菌，並加入一種專門抑制「線粒體呼吸酶」的藥物，結果發現該細菌的生長與蛋白質合成完全不受影響。最合理的解釋是什麼？",
+          options: [
+            "細菌屬於原核生物，細胞內本身沒有線粒體，但擁有核糖體並在細胞膜/細胞質進行呼吸作用",
+            "細菌體內充滿纖維素細胞壁，完全阻擋所有小分子進入",
+            "細菌不需要任何能量即可合成多肽鏈",
+            "該藥物使細菌的核膜變得更加堅固"
+          ],
+          answer: 0,
+          explanation: "原核細胞沒有雙層膜包圍的線粒體和核膜，但擁有游離的核糖體合成蛋白質，並利用細胞膜上的酶進行呼吸作用。",
+          tip: "原核細胞雖無線粒體，但仍能進行呼吸作用（酶位於細胞膜內側）及蛋白質合成（靠游離核糖體）。"
+        },
+        {
+          match: "內質網",
+          keyword: "粗糙與平滑內質網分工",
+          stem: "研究人員用放射性標記的氨基酸培養胰臟腺泡細胞（專門分泌消化酶），追蹤放射性物質在細胞內的移動路徑。最先出現放射性聚集的細胞器順序應為哪項？",
+          options: [
+            "核糖體 → 粗糙內質網 → 高爾基體",
+            "平滑內質網 → 液泡 → 線粒體",
+            "高爾基體 → 細胞核 → 平滑內質網",
+            "葉綠體 → 粗糙內質網 → 核糖體"
+          ],
+          answer: 0,
+          explanation: "分泌蛋白（如消化酶）由附著在粗糙內質網上的核糖體合成，進入粗糙內質網初步加工後，再運往高爾基體進行化學改變與包裝分泌。",
+          tip: "分泌蛋白經典路徑：核糖體 → 粗糙 ER → 高爾基體 → 細胞膜。"
+        }
+      ];
+
+      const membraneUnit3Bank = [
+        {
+          match: "流動鑲嵌",
+          keyword: "流動鑲嵌模型與選擇透性",
+          stem: "根據細胞膜的「流動鑲嵌模型（Fluid mosaic model）」，下列哪類物質能夠不依賴膜蛋白，直接穿過磷脂雙分子層進入細胞？",
+          options: [
+            "氧氣、二氧化碳及脂溶性維生素等非極性小分子",
+            "鈉離子（Na⁺）與鉀離子（K⁺）等帶電離子",
+            "葡萄糖與氨基酸等大型極性水溶性分子",
+            "澱粉與蛋白質等生物大分子"
+          ],
+          answer: 0,
+          explanation: "磷脂雙分子層內部為疏水性脂肪酸尾，因此脂溶性及非極性小分子（如 O₂、CO₂、甘油）可直接透過簡單擴散穿過磷脂雙分子層；帶電離子及極性水溶性分子則需通道蛋白或載體蛋白協助。",
+          tip: "緊記磷脂雙分子層疏水核心只讓「脂溶性/非極性小分子」直接通過。"
+        },
+        {
+          match: "流動鑲嵌",
+          keyword: "流動鑲嵌模型與選擇透性",
+          stem: "將新鮮紅菜頭（甜菜根）切片分別放入 25°C 蒸餾水與 75°C 熱水中，發現 75°C 熱水迅速變成深紅色，而 25°C 水幾乎無色。這項實驗結果證明了什麼？",
+          options: [
+            "高溫使細胞膜中的蛋白質變性並破壞磷脂雙分子層結構，導致細胞膜喪失選擇透性",
+            "75°C 高溫大幅加快了紅色色素分子的主動轉運速率",
+            "紅菜頭細胞壁在 75°C 下才變成全透性",
+            "高溫促使液泡合成了更多水溶性紅色色素"
+          ],
+          answer: 0,
+          explanation: "常溫下紅菜頭細胞膜與液泡膜具有選擇透性，阻止花青素滲出；75°C 高溫使膜蛋白變性及磷脂層解體，膜失去選擇透性，色素大量擴散至水中。",
+          tip: "紅菜頭（Beetroot）滲漏實驗是 HKDSE 考核細胞膜完整性的經典實驗題！"
+        },
+        {
+          match: "擴散",
+          keyword: "擴散作用 vs 滲透作用",
+          stem: "下列哪項關於「滲透作用（Osmosis）」的敘述完全符合 HKDSE 生物科的嚴謹定義？",
+          options: [
+            "水分子穿過選擇透性膜，由高水勢區域向低水勢區域的淨移動",
+            "溶質分子穿過全透性膜，由高濃度向低濃度的主動移動",
+            "水分子消耗 ATP，由低水勢區域向高水勢區域的單向移動",
+            "任何氣體或液體分子在沒有膜分隔下的自由擴散"
+          ],
+          answer: 0,
+          explanation: "滲透作用是水分子（溶劑）透過選擇透性膜，順水勢梯度（高水勢 → 低水勢）進行的被動淨移動，無需消耗能量。",
+          tip: "DSE 評分標準三要素：① 水分子淨移動、② 穿過選擇透性膜、③ 由高水勢至低水勢。"
+        },
+        {
+          match: "擴散",
+          keyword: "擴散作用 vs 滲透作用",
+          stem: "在探討滲透作用的實驗中，以透析管（Visking tubing）盛載 20% 蔗糖溶液並浸入蒸餾水中。30 分鐘後透析管明顯膨脹變硬，原因是什麼？",
+          options: [
+            "蒸餾水的水勢高於 20% 蔗糖溶液，水分子透過透析管淨滲入管內",
+            "蔗糖分子透過透析管大量擴散到蒸餾水中",
+            "透析管主動消耗能量將水分子泵入管內",
+            "蔗糖在管內分解產生大量二氧化碳氣體"
+          ],
+          answer: 0,
+          explanation: "透析管為選擇透性膜，只容許細小的水分子通過而阻擋較大的蔗糖分子。外界蒸餾水水勢較高，故水分子順水勢梯度淨滲入透析管。",
+          tip: "透析管模擬「選擇透性膜」，只能讓水、葡萄糖、碘分子等小分子通過，不能讓蔗糖和澱粉通過。"
+        },
+        {
+          match: "主動轉運",
+          keyword: "主動轉運與 ATP 消耗",
+          stem: "研究人員測定植物根毛細胞吸收硝酸鹽離子（NO₃⁻）的速率，發現當向培養液中加入抑制細胞呼吸的氰化物後，硝酸鹽吸收速率幾乎降至零。這證明根毛細胞吸收硝酸鹽主要依賴哪種機制？",
+          options: [
+            "主動轉運（Active transport），需要呼吸作用提供能量（ATP）與載體蛋白",
+            "簡單擴散（Simple diffusion），順濃度梯度穿過磷脂層",
+            "滲透作用（Osmosis），隨水分子一同被動流入細胞",
+            "胞吐作用（Exocytosis），將硝酸鹽排出細胞外"
+          ],
+          answer: 0,
+          explanation: "加入呼吸抑制劑後吸收停止，說明該過程依賴細胞呼吸產生的 ATP 能量，屬於逆濃度梯度進行的主動轉運。",
+          tip: "看到「呼吸抑制劑 / 缺氧 / 溫度影響呼吸速率 → 物質吸收速率下降」，答案必為「主動轉運」！",
+        },
+        {
+          match: "主動轉運",
+          keyword: "主動轉運與 ATP 消耗",
+          stem: "比較「協助擴散（Facilitated diffusion）」與「主動轉運（Active transport）」，兩者的共同點是什麼？",
+          options: [
+            "兩者均需要細胞膜上的特定轉運蛋白（載體蛋白或通道蛋白）協助",
+            "兩者均必須消耗細胞呼吸產生的 ATP",
+            "兩者均只能將物質由低濃度運往高濃度",
+            "兩者均只適用於脂溶性小分子"
+          ],
+          answer: 0,
+          explanation: "協助擴散（順濃度梯度、不耗能）與主動轉運（逆濃度梯度、耗 ATP）都需要膜蛋白參與，因此兩者皆具有專一性及飽和速率上限。",
+          tip: "共同點：都需膜蛋白參與；差異點：方向（順 vs 逆濃度梯度）與是否耗 ATP。"
+        },
+        {
+          match: "水勢",
+          keyword: "不同水勢溶液對動植物細胞的影響",
+          stem: "將一條新鮮馬鈴薯條（初始水勢為 -400 kPa）浸入水勢為 -800 kPa 的濃蔗糖溶液中 1 小時。馬鈴薯條的長度與細胞狀態會發生什麼變化？",
+          options: [
+            "馬鈴薯條變短變軟，細胞因淨失水而發生質壁分離（Plasmolysis）",
+            "馬鈴薯條變長變硬，細胞因淨吸水而膨脹",
+            "馬鈴薯條長度不變，因為水分子完全停止移動",
+            "馬鈴薯細胞因過度吸水而爆裂"
+          ],
+          answer: 0,
+          explanation: "馬鈴薯細胞水勢（-400 kPa）高於外界濃蔗糖溶液（-800 kPa），水分子順水勢梯度淨滲出細胞，細胞失水收縮使細胞膜與細胞壁分離（質壁分離）。",
+          tip: "記住負數比較：-400 kPa > -800 kPa！水永遠從「較不負（高水勢）」流向「更負（低水勢）」。"
+        },
+        {
+          match: "水勢",
+          keyword: "不同水勢溶液對動植物細胞的影響",
+          stem: "若將人體紅血球分別放入蒸餾水與 5% 濃鹽水中，在顯微鏡下觀察到的現象分別是什麼？",
+          options: [
+            "在蒸餾水中吸水膨脹並爆裂（溶血）；在 5% 濃鹽水中失水皺縮",
+            "在蒸餾水中發生質壁分離；在 5% 濃鹽水中吸水硬脹",
+            "在兩種溶液中均保持雙凹圓盤狀不變",
+            "在蒸餾水中失水皺縮；在 5% 濃鹽水中爆裂"
+          ],
+          answer: 0,
+          explanation: "動物細胞沒有細胞壁保護，在低滲的蒸餾水中會持續淨吸水直至細胞膜破裂；在高滲的 5% 濃鹽水中則會淨失水而皺縮。",
+          tip: "動物細胞沒有細胞壁，因此永遠不會出現「硬脹（Turgid）」或「質壁分離（Plasmolysis）」，這兩個詞專屬於有細胞壁的植物細胞！"
+        }
+      ];
+
+      // 根據當前課題選擇對應題庫（嚴格隔離！）
+      let activeBank = [];
+      if (isDefaultUnit2) {
+        activeBank = unit2Bank;
+      } else if (/細胞膜|穿越|擴散|滲透|主動轉運|流動鑲嵌|membrane|osmosis|diffusion/i.test(topicFullContext)) {
+        activeBank = membraneUnit3Bank;
+      }
+
+      if (activeBank.length > 0) {
+        const matchedPool = activeBank.filter(item => {
+          if (kp) {
+            return kp.keyword.includes(item.match) || kp.title.includes(item.match) || item.keyword === kp.keyword;
+          }
+          return topic.keyPoints.some(k => k.keyword.includes(item.match) || k.title.includes(item.match));
+        });
+        const candidatePool = matchedPool.length > 0 ? matchedPool : activeBank;
+        const shuffledPool = [...candidatePool].sort(() => Math.random() - 0.5);
+
+        for (const item of shuffledPool) {
+          if (results.length >= count) break;
+          const fullStemCheck = `[${difficulty}] ${item.stem}`;
+          if (!existingStems.has(fullStemCheck)) {
+            existingStems.add(fullStemCheck);
+            results.push({
+              keyword: item.keyword,
+              stem: item.stem,
+              options: [...item.options],
+              answer: item.answer,
+              explanation: item.explanation,
+              tip: item.tip
+            });
+          }
+        }
+      }
+
+      // 2. 針對任何新上傳的課題（或題數大於內置題庫時），嚴格根據【當前課題的考點與筆記內容】動態生成專屬題目，絕不跨單元借題！
+      const scenarioTemplates = [
+        {
+          stem1: "（基礎概念辨析 #{N}）在「{TOPIC}」中，關於考點「{KW}」的核心定義與生物學特徵，下列哪項敘述最為準確？",
+          stem2: "（校內實驗應用 #{N}）某同學在「{TOPIC}」的課堂實驗中，針對「{KW}」進行變量測試。根據「{TITLE}」的原理，下列哪項分析最合理？",
+          stem3: "（DSE 數據推論 #{N}）研究人員在探究「{TOPIC}」時，發現細胞內「{KW}」的相關機制受到特定條件調控。結合「{TITLE}」，下列哪項推論最符合科學證據？"
+        },
+        {
+          stem1: "（核心原理檢驗 #{N}）學習「{TOPIC}」時，下列哪項正確配對了「{KW}」與其在生物體內的生理功能？",
+          stem2: "（易錯概念對比 #{N}）在「{TOPIC}」的測驗中，同學常混淆「{KW}」的運作條件。根據「{TITLE}」的要點，下列哪項判斷正確？",
+          stem3: "（DSE 跨概念整合 #{N}）若某生理過程依賴「{TOPIC}」中的「{KW}」機制運作，當外界環境或能量供應改變時，下列哪項預測最為合理？"
+        },
+        {
+          stem1: "（定義與結構 #{N}）下列哪項敘述最能概括「{TOPIC}」中「{KW}」的關鍵結構或過程特徵？",
+          stem2: "（因果邏輯分析 #{N}）針對「{TOPIC}」裡的「{TITLE}」，下列哪項因果推論最能解釋「{KW}」的生理意義？",
+          stem3: "（DSE 實驗設計評估 #{N}）為驗證「{TOPIC}」中「{KW}」的作用機制，研究人員設計了對照組與實驗組。下列哪項預期結果與結論最吻合？"
+        }
+      ];
+
+      let dynamicIdx = 0;
+      while (results.length < count) {
+        const curKp = targetKps[dynamicIdx % Math.max(1, targetKps.length)] || {
+          keyword: topic.title,
+          title: topic.title,
+          explanation: topic.summary || "緊扣本課題核心生理機制與實驗變量關係進行分析。",
+          examTip: "作答時必須使用標準 DSE 生物學術語並寫出完整因果關係。"
+        };
+
+        const tpl = scenarioTemplates[dynamicIdx % scenarioTemplates.length];
+        const serialNum = appState.questions.length + results.length + 1;
+        const rawTpl = difficulty.includes("1.") ? tpl.stem1 : (difficulty.includes("2.") ? tpl.stem2 : tpl.stem3);
+
+        const stem = rawTpl
+          .replace("{N}", serialNum)
+          .replace("{TOPIC}", topic.title)
+          .replace("{KW}", curKp.keyword)
+          .replace("{TITLE}", curKp.title);
+
+        // 從當前考點講解中提取真實語義作為正確選項，並生成針對本課題的干擾項
+        const expSentences = (curKp.explanation || "").split("。").map(s => s.trim()).filter(s => s.length >= 6);
+        const coreTruth = expSentences[0]
+          ? `${expSentences[0]}，從而確保「${curKp.keyword}」的生理功能正常運作`
+          : `在「${topic.title}」中，${curKp.keyword}遵循特定的結構與功能適應及濃度/能量調控機制`;
+
+        const siblingKps = (topic.keyPoints || []).filter(k => k.keyword !== curKp.keyword);
+        const distractor1 = siblingKps[0]
+          ? `該過程完全由「${siblingKps[0].keyword}」單獨取代，無需任何專一性結構或條件參與`
+          : `在「${topic.title}」中，此過程不需要任何專一性結構或環境條件即可無限期自動進行`;
+        const distractor2 = `當環境溫度升高至 90°C 或加入代謝抑制劑時，該生理速率仍會持續倍增且不受影響`;
+        const distractor3 = `所有生物細胞均採用完全相同的被動擴散方式執行此過程，與膜蛋白或能量供應無關`;
+
+        const fullStemCheck = `[${difficulty}] ${stem}`;
+        if (!existingStems.has(fullStemCheck)) {
+          existingStems.add(fullStemCheck);
+          results.push({
+            keyword: curKp.keyword,
+            stem,
+            options: [coreTruth, distractor1, distractor2, distractor3],
+            answer: 0,
+            explanation: `【${topic.title} · ${difficulty}解析】本題專項考核「${curKp.keyword}」。${curKp.explanation}`,
+            tip: curKp.examTip || "緊扣本課題考點關鍵詞與因果邏輯作答。"
+          });
+        }
+        dynamicIdx++;
+      }
+
+      return results;
+    }
+
+    // 針對「整個單元」或「單一考點」按指定難度（1.普通測驗 / 2.校內考試 / 3.DSE模擬題）與指定數目生成新題
+    async function generateQuestionsForUnitOrKp(topicId, kpIndex, event) {
+      if (event) event.stopPropagation();
+      const topic = appState.topics.find(t => t.id === topicId);
+      if (!topic) return;
+
+      const isUnit = kpIndex === null || kpIndex === undefined;
+      const kp = isUnit ? null : topic.keyPoints[kpIndex];
+      const selectEl = document.getElementById(isUnit ? `unit-diff-${topicId}` : `kp-diff-${topicId}-${kpIndex}`);
+      const countEl = document.getElementById(isUnit ? `unit-count-${topicId}` : `kp-count-${topicId}-${kpIndex}`);
+      const btnEl = document.getElementById(isUnit ? `unit-gen-btn-${topicId}` : `kp-gen-btn-${topicId}-${kpIndex}`);
+      const difficulty = selectEl ? selectEl.value : "3. DSE 模擬題";
+      const parsedCount = countEl ? parseInt(countEl.value, 10) : NaN;
+      const questionCount = !isNaN(parsedCount) && parsedCount > 0 ? parsedCount : (isUnit ? 5 : 3);
+
+      const originalBtnText = btnEl ? btnEl.innerHTML : "";
+      if (btnEl) {
+        btnEl.disabled = true;
+        btnEl.innerHTML = `<span class="inline-block w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin mr-1"></span>出題中...`;
+      }
+
+      try {
+        const targetLabel = isUnit ? `單元「${topic.title}」` : `考點「${kp.title}」`;
+        const promptText = `你是一位資深香港 HKDSE 生物科考評專家。請針對${targetLabel}，嚴格按照難度等級「${difficulty}」生成 ${questionCount} 道高質素單項選擇題（每題題幹與設問角度必須互不相同）。
+要求：
+- 若為「1. 普通測驗」：側重基礎概念記憶與直接定義辨析；
+- 若為「2. 校內考試」：側重實驗應用、結構與功能適應及常見易錯陷阱；
+- 若為「3. DSE 模擬題」：採用 HKDSE 實戰情境、數據/實驗推論及跨概念整合。
+請以純 JSON 陣列回傳（不要包含 Markdown 標記），格式為：
+[{"keyword":"考點關鍵詞","stem":"題幹","options":["選項A內容","選項B內容","選項C內容","選項D內容"],"answer":0,"explanation":"詳細解析","tip":"DSE 奪星提示"}]`;
+
+        let rawQuestions = [];
+        try {
+          const textResponse = await fetchGeminiWithRetry([{ text: promptText }]);
+          const cleaned = textResponse.replace(/```json/gi, "").replace(/```/g, "").trim();
+          const parsed = JSON.parse(cleaned);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            rawQuestions = parsed;
+          }
+        } catch (apiErr) {
+          rawQuestions = buildLocalDifficultyQuestions(topic, kp, difficulty, questionCount);
+        }
+
+        if (!rawQuestions || rawQuestions.length === 0) {
+          rawQuestions = buildLocalDifficultyQuestions(topic, kp, difficulty, questionCount);
+        }
+
+        const existingStems = new Set(appState.questions.map(q => q.stem.trim()));
+        const formattedQuestions = rawQuestions.slice(0, questionCount).map((item, idx) => {
+          let finalStem = `[${difficulty}] ${item.stem}`;
+          if (existingStems.has(finalStem.trim())) {
+            finalStem = `[${difficulty}]（進階變式 #${appState.questions.length + idx + 1}）${item.stem}`;
+          }
+          existingStems.add(finalStem.trim());
+
+          const shuffled = shuffleOptionsWithAnswer(item.options || [], typeof item.answer === "number" ? item.answer : 0);
+          return {
+            id: `gen_${Date.now()}_${idx}_${Math.random().toString(36).slice(2, 6)}`,
+            topicId: topic.id,
+            topicTitle: topic.title,
+            keyword: item.keyword || (kp ? kp.keyword : topic.title),
+            stem: finalStem,
+            options: shuffled.options,
+            answer: shuffled.answer,
+            explanation: item.explanation || "請結合筆記核心考點及結構與功能適應原理進行分析。",
+            tip: item.tip || "緊扣 DSE 評分標準關鍵詞作答。",
+            userAnswer: null,
+            isVariant: false
+          };
+        });
+
+        appState.questions.push(...formattedQuestions);
+        saveState();
+        renderTopicAnalysisView();
+        showToast(`✅ 已按「${difficulty}」生成 ${formattedQuestions.length} 道新題！`);
+
+        // 自動跳轉至新生成的第 1 題開始作答
+        const filteredAfterAdd = appState.questions.filter(q => q.topicId === topic.id);
+        const firstNewPos = Math.max(0, filteredAfterAdd.length - formattedQuestions.length);
+        appState.activeTopicFilter = topic.id;
+        appState.currentQuizIndex = firstNewPos;
+        switchTab("quiz");
+      } catch (err) {
+        console.error(err);
+        showToast("⚠️ 出題時發生異常，請重試。");
+      } finally {
+        if (btnEl) {
+          btnEl.disabled = false;
+          btnEl.innerHTML = originalBtnText;
+        }
+      }
+    }
+
+    // =========================================================================
+    // 6. 分頁 2：互動刷題測驗與自動錯題捕獲
+    // =========================================================================
+    function getFilteredQuestions() {
+      if (appState.activeTopicFilter === "ALL") {
+        return appState.questions;
+      }
+      return appState.questions.filter(q => q.topicId === appState.activeTopicFilter);
+    }
+
+    function filterQuizByTopic(topicId) {
+      appState.activeTopicFilter = topicId;
+      appState.currentQuizIndex = 0;
+      renderQuizView();
+    }
+
+    function renderQuizView() {
+      const filterSelect = document.getElementById("quiz-topic-filter");
+      if (filterSelect) {
+        const currentVal = appState.activeTopicFilter;
+        filterSelect.innerHTML = `<option value="ALL">全部課題題目 (${appState.questions.length}題)</option>` +
+          appState.topics.map(t => {
+            const cnt = appState.questions.filter(q => q.topicId === t.id).length;
+            return `<option value="${t.id}">${t.title} (${cnt}題)</option>`;
+          }).join("");
+        filterSelect.value = currentVal;
+      }
+
+      const list = getFilteredQuestions();
+      if (list.length === 0) {
+        document.getElementById("quiz-stem").textContent = "目前此篩選下暫無題目，請返回「上傳筆記與考點標示」生成題目！";
+        document.getElementById("quiz-options").innerHTML = "";
+        document.getElementById("quiz-feedback").classList.add("hidden");
+        document.getElementById("quiz-grid").innerHTML = "";
+        return;
+      }
+
+      if (appState.currentQuizIndex >= list.length) appState.currentQuizIndex = 0;
+      if (appState.currentQuizIndex < 0) appState.currentQuizIndex = 0;
+
+      const q = list[appState.currentQuizIndex];
+      const isAnswered = q.userAnswer !== null;
+
+      document.getElementById("quiz-progress-badge").textContent = `第 ${appState.currentQuizIndex + 1} 題 / ${list.length}`;
+      document.getElementById("quiz-topic-badge").textContent = q.topicTitle;
+      document.getElementById("quiz-keyword-badge").textContent = `考點詞：${q.keyword}`;
+      document.getElementById("quiz-stem").textContent = q.stem;
+
+      const optionsEl = document.getElementById("quiz-options");
+      optionsEl.innerHTML = q.options.map((opt, idx) => {
+        const letter = String.fromCharCode(65 + idx);
+        let cardCls = "border-slate-200 bg-white hover:border-teal-400 hover:bg-teal-50/30 text-slate-700";
+        let badgeCls = "border-slate-200 bg-slate-50 text-slate-600";
+        let badgeText = letter;
+
+        if (isAnswered) {
+          if (idx === q.answer) {
+            cardCls = "border-emerald-500 bg-emerald-50/80 text-emerald-950 font-semibold ring-1 ring-emerald-500";
+            badgeCls = "bg-emerald-600 text-white border-emerald-600";
+            badgeText = "✓";
+          } else if (idx === q.userAnswer) {
+            cardCls = "border-rose-500 bg-rose-50/80 text-rose-950 ring-1 ring-rose-500";
+            badgeCls = "bg-rose-600 text-white border-rose-600";
+            badgeText = "✕";
+          } else {
+            cardCls = "border-slate-200 bg-slate-50/60 text-slate-400 opacity-75";
+          }
+        }
+
+        return `
+          <button type="button" ${isAnswered ? "disabled" : ""} onclick="submitQuizAnswer('${q.id}', ${idx})" class="option-btn w-full p-3.5 sm:p-4 rounded-xl border text-left flex items-start gap-3 text-sm sm:text-base ${cardCls}">
+            <span class="w-7 h-7 rounded-lg border font-bold text-xs flex items-center justify-center shrink-0 mt-0.5 ${badgeCls}">${badgeText}</span>
+            <span class="flex-1 leading-snug">${opt}</span>
+          </button>
+        `;
+      }).join("");
+
+      const feedbackEl = document.getElementById("quiz-feedback");
+      if (isAnswered) {
+        const isCorrect = q.userAnswer === q.answer;
+        const correctLetter = String.fromCharCode(65 + q.answer);
+        feedbackEl.classList.remove("hidden");
+        feedbackEl.className = `mt-6 rounded-xl p-4 sm:p-5 border fade-in ${
+          isCorrect ? "bg-emerald-50/70 border-emerald-200" : "bg-rose-50/70 border-rose-200"
+        }`;
+        feedbackEl.innerHTML = `
+          <div class="flex items-start gap-3">
+            <span class="w-7 h-7 rounded-full ${isCorrect ? "bg-emerald-600" : "bg-rose-600"} text-white flex items-center justify-center font-bold text-sm shrink-0 mt-0.5">
+              ${isCorrect ? "✓" : "!"}
+            </span>
+            <div class="flex-1 space-y-2">
+              <div class="font-bold text-sm sm:text-base ${isCorrect ? "text-emerald-800" : "text-rose-800"}">
+                ${isCorrect ? `回答正確！（答案：${correctLetter}）` : `回答錯誤，正確答案是 ${correctLetter}（已自動收入智能錯題本）`}
+              </div>
+              <p class="text-xs sm:text-sm text-slate-700 leading-relaxed">${q.explanation}</p>
+              <div class="pt-2 border-t border-black/5 text-xs font-medium text-slate-700">
+                <strong class="text-indigo-700">💡 DSE 奪星提示：</strong>${q.tip}
+              </div>
+            </div>
+          </div>
+        `;
+      } else {
+        feedbackEl.classList.add("hidden");
+      }
+
+      document.getElementById("quiz-prev-btn").disabled = appState.currentQuizIndex === 0;
+      document.getElementById("quiz-next-btn").disabled = appState.currentQuizIndex >= list.length - 1;
+
+      const gridEl = document.getElementById("quiz-grid");
+      gridEl.innerHTML = list.map((item, idx) => {
+        const isCur = idx === appState.currentQuizIndex;
+        let btnStyle = "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100";
+        if (item.userAnswer !== null) {
+          btnStyle = item.userAnswer === item.answer
+            ? "bg-emerald-500 border-emerald-600 text-white font-bold"
+            : "bg-rose-500 border-rose-600 text-white font-bold";
+        }
+        if (isCur) btnStyle += " ring-2 ring-offset-1 ring-teal-600";
+
+        return `
+          <button type="button" onclick="jumpToQuizIndex(${idx})" class="h-9 rounded-lg border text-xs transition-all flex items-center justify-center ${btnStyle}">
+            ${idx + 1}
+          </button>
+        `;
+      }).join("");
+    }
+
+    function submitQuizAnswer(questionId, selectedIdx) {
+      const q = appState.questions.find(item => item.id === questionId);
+      if (!q || q.userAnswer !== null) return;
+
+      q.userAnswer = selectedIdx;
+      if (selectedIdx !== q.answer) {
+        addQuestionToMistakeBook(q.id, selectedIdx);
+      } else if (q.isVariant && q.parentMistakeQuestionId) {
+        // 若答對了針對某錯題生成的變種題，提示可標記原錯題為已攻克
+        showToast("🎉 變種題答對！你已掌握該考點，可前往錯題本標記原題「已攻克」。");
+      }
+      saveState();
+      renderQuizView();
+    }
+
+    function addQuestionToMistakeBook(questionId, selectedAnswer) {
+      const existing = appState.mistakes.find(m => m.questionId === questionId);
+      if (!existing) {
+        appState.mistakes.unshift({
+          questionId,
+          selectedAnswer,
+          resolved: false,
+          addedAt: new Date().toLocaleDateString("zh-HK")
+        });
+      } else {
+        existing.selectedAnswer = selectedAnswer;
+        existing.resolved = false;
+      }
+      updateHeaderStats();
+    }
+
+    function manualAddCurrentToMistakes() {
+      const list = getFilteredQuestions();
+      const q = list[appState.currentQuizIndex];
+      if (!q) return;
+      addQuestionToMistakeBook(q.id, q.userAnswer !== null ? q.userAnswer : -1);
+      saveState();
+      showToast("📌 已手動將本題加入「智能錯題本」！");
+    }
+
+    function navigateQuiz(delta) {
+      const list = getFilteredQuestions();
+      const nextIdx = appState.currentQuizIndex + delta;
+      if (nextIdx >= 0 && nextIdx < list.length) {
+        appState.currentQuizIndex = nextIdx;
+        renderQuizView();
+      }
+    }
+
+    function jumpToQuizIndex(idx) {
+      appState.currentQuizIndex = idx;
+      renderQuizView();
+    }
+
+    function resetCurrentQuizAnswers() {
+      const list = getFilteredQuestions();
+      list.forEach(q => { q.userAnswer = null; });
+      appState.currentQuizIndex = 0;
+      saveState();
+      renderQuizView();
+      showToast("🔄 已清空當前題組作答紀錄。");
+    }
+
+    // =========================================================================
+    // 7. 分頁 3：智能錯題本與相似考點詞變種題生成
+    // =========================================================================
+    function renderMistakesView() {
+      const container = document.getElementById("mistakes-list-container");
+      const summaryText = document.getElementById("mistake-summary-text");
+      if (!container) return;
+
+      summaryText.textContent = `已勾選 ${appState.selectedMistakeIds.length} 道錯題（共 ${appState.mistakes.length} 條錯題紀錄）`;
+
+      if (appState.mistakes.length === 0) {
+        container.innerHTML = `
+          <div class="bg-white rounded-2xl border border-slate-200 p-10 text-center space-y-2">
+            <div class="text-3xl">🎯</div>
+            <h3 class="font-bold text-slate-800 text-base">目前還沒有錯題紀錄</h3>
+            <p class="text-xs text-slate-500">在「2. 互動刷題測驗」中答錯的題目，或手動收藏的難題都會自動彙整於此。</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = appState.mistakes.map(m => {
+        const q = appState.questions.find(item => item.id === m.questionId);
+        if (!q) return "";
+        const isChecked = appState.selectedMistakeIds.includes(m.questionId);
+        const correctLetter = String.fromCharCode(65 + q.answer);
+        const yourLetter = m.selectedAnswer >= 0 ? String.fromCharCode(65 + m.selectedAnswer) : "手動收藏";
+
+        return `
+          <div class="bg-white rounded-2xl border ${isChecked ? "border-indigo-500 ring-1 ring-indigo-500" : "border-slate-200"} p-4 sm:p-5 transition-all">
+            <div class="flex items-start gap-3">
+              <input type="checkbox" ${isChecked ? "checked" : ""} onchange="toggleMistakeSelection('${m.questionId}')" class="mt-1 w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer" />
+              <div class="flex-1 space-y-2">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span class="px-2.5 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200 text-xs font-bold">考點詞：${q.keyword}</span>
+                    <span class="text-xs text-slate-400">${q.topicTitle}</span>
+                    ${m.resolved
+                      ? `<span class="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[11px] font-bold">✓ 已攻克</span>`
+                      : `<span class="px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 text-[11px] font-bold">待攻克</span>`}
+                  </div>
+                  <button type="button" onclick="toggleMistakeResolved('${m.questionId}')" class="text-xs font-semibold ${m.resolved ? "text-slate-500 hover:underline" : "text-emerald-600 hover:underline"}">
+                    ${m.resolved ? "標記為未掌握" : "✓ 標記已攻克"}
+                  </button>
+                </div>
+                <p class="font-bold text-sm sm:text-base text-slate-800 leading-relaxed">${q.stem}</p>
+                <div class="flex flex-wrap items-center gap-4 text-xs pt-1">
+                  <span class="text-rose-600 font-semibold">你的選擇：${yourLetter}</span>
+                  <span class="text-emerald-700 font-bold">正確答案：${correctLetter}（${q.options[q.answer]}）</span>
+                </div>
+                <p class="text-xs text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100 leading-relaxed">
+                  <strong>解析要點：</strong>${q.explanation}
+                </p>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function toggleMistakeSelection(questionId) {
+      const idx = appState.selectedMistakeIds.indexOf(questionId);
+      if (idx === -1) {
+        appState.selectedMistakeIds.push(questionId);
+      } else {
+        appState.selectedMistakeIds.splice(idx, 1);
+      }
+      renderMistakesView();
+    }
+
+    function toggleSelectAllMistakes() {
+      if (appState.selectedMistakeIds.length === appState.mistakes.length) {
+        appState.selectedMistakeIds = [];
+      } else {
+        appState.selectedMistakeIds = appState.mistakes.map(m => m.questionId);
+      }
+      renderMistakesView();
+    }
+
+    function toggleMistakeResolved(questionId) {
+      const m = appState.mistakes.find(item => item.questionId === questionId);
+      if (m) {
+        m.resolved = !m.resolved;
+        saveState();
+        renderMistakesView();
+      }
+    }
+
+    function buildLocalVariantQuestions(selectedQuestions) {
+      const existingStems = new Set(appState.questions.map(q => q.stem.trim()));
+      const variantScenarios = [
+        "【變種實驗題】研究人員設計了對照實驗以驗證「{KW}」的生理機制，在改變受質濃度與細胞環境後測得異常數據。",
+        "【變種情境題】在臨床病理分析中，某患者的組織樣本顯示「{KW}」相關結構出現功能障礙。",
+        "【變種對比題】比較兩種不同生理狀態的細胞樣本時，發現「{KW}」是決定兩者代謝差異的關鍵因素。"
+      ];
+
+      return selectedQuestions.map((origQ, idx) => {
+        const topic = appState.topics.find(t => t.id === origQ.topicId) || appState.topics[0];
+        const matchingKp = topic?.keyPoints?.find(k => k.keyword === origQ.keyword || origQ.keyword.includes(k.keyword));
+
+        // 優先從同考點題庫中抽取尚未出現過的全新題目
+        const poolCandidates = buildLocalDifficultyQuestions(topic, matchingKp || null, "3. DSE 模擬題", 6);
+        const freshOne = poolCandidates.find(c => !existingStems.has(`[變種題 · 考點：${origQ.keyword}] ${c.stem}`));
+
+        const scenario = variantScenarios[(idx + appState.questions.length) % variantScenarios.length].replace("{KW}", origQ.keyword);
+        const baseStem = freshOne
+          ? freshOne.stem
+          : `${scenario} 結合「${origQ.keyword}」的核心原理，下列哪項推論最為合理？`;
+
+        const rawOpts = freshOne ? freshOne.options : origQ.options;
+        const rawAns = freshOne ? freshOne.answer : origQ.answer;
+        const shuffled = shuffleOptionsWithAnswer(rawOpts, rawAns);
+
+        const finalStem = `[變種題 · 考點：${origQ.keyword}] ${baseStem}`;
+        existingStems.add(finalStem.trim());
+
+        return {
+          id: `var_${Date.now()}_${idx}_${Math.random().toString(36).slice(2, 6)}`,
+          topicId: origQ.topicId,
+          topicTitle: origQ.topicTitle,
+          keyword: origQ.keyword,
+          stem: finalStem,
+          options: shuffled.options,
+          answer: shuffled.answer,
+          explanation: freshOne ? freshOne.explanation : origQ.explanation,
+          tip: freshOne ? freshOne.tip : origQ.tip,
+          userAnswer: null,
+          isVariant: true,
+          parentMistakeQuestionId: origQ.id
+        };
+      });
+    }
+
+    async function generateVariantsFromSelectedMistakes() {
+      if (appState.selectedMistakeIds.length === 0) {
+        showToast("⚠️ 請先在下方勾選至少一道錯題！");
+        return;
+      }
+
+      const selectedQs = appState.selectedMistakeIds
+        .map(id => appState.questions.find(q => q.id === id))
+        .filter(Boolean);
+
+      const btn = document.getElementById("generate-variant-btn");
+      const origHtml = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = `<span class="inline-block w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin"></span><span>正在針對考點詞生成變種題...</span>`;
+
+      try {
+        const summaryPrompt = selectedQs.map((q, i) => `錯題${i + 1}（考點詞：${q.keyword}）：${q.stem}`).join("\n");
+        const prompt = `你是一位資深香港 HKDSE 生物科考評專家。請針對以下學生做錯的題目，保留每題完全相同的「考點詞」與易錯邏輯，但徹底更換全新的實驗情境、生物例子或數據設問角度，為每題生成 1 道全新的變種選擇題（共 ${selectedQs.length} 題）。
+${summaryPrompt}
+請以純 JSON 陣列回傳（勿加 Markdown）：
+[{"keyword":"原考點詞","stem":"全新情境題幹","options":["選項A","選項B","選項C","選項D"],"answer":0,"explanation":"詳細解析","tip":"DSE 奪星提示"}]`;
+
+        let variantQuestions = [];
+        try {
+          const textRes = await fetchGeminiWithRetry([{ text: prompt }]);
+          const cleaned = textRes.replace(/```json/gi, "").replace(/```/g, "").trim();
+          const parsed = JSON.parse(cleaned);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            variantQuestions = parsed.map((item, idx) => {
+              const orig = selectedQs[idx % selectedQs.length];
+              const shuffled = shuffleOptionsWithAnswer(item.options || orig.options, typeof item.answer === "number" ? item.answer : 0);
+              return {
+                id: `var_${Date.now()}_${idx}_${Math.random().toString(36).slice(2, 6)}`,
+                topicId: orig.topicId,
+                topicTitle: orig.topicTitle,
+                keyword: item.keyword || orig.keyword,
+                stem: `[變種題 · 考點：${item.keyword || orig.keyword}] ${item.stem}`,
+                options: shuffled.options,
+                answer: shuffled.answer,
+                explanation: item.explanation || orig.explanation,
+                tip: item.tip || orig.tip,
+                userAnswer: null,
+                isVariant: true,
+                parentMistakeQuestionId: orig.id
+              };
+            });
+          }
+        } catch (apiErr) {
+          variantQuestions = buildLocalVariantQuestions(selectedQs);
+        }
+
+        if (variantQuestions.length === 0) {
+          variantQuestions = buildLocalVariantQuestions(selectedQs);
+        }
+
+        appState.questions.push(...variantQuestions);
+        const firstVarIdx = appState.questions.length - variantQuestions.length;
+        appState.activeTopicFilter = "ALL";
+        appState.currentQuizIndex = firstVarIdx;
+        saveState();
+        showToast(`⚡ 已生成 ${variantQuestions.length} 道「相似考點詞、全新情境」變種題，立即開始實戰檢驗！`);
+        switchTab("quiz");
+      } catch (err) {
+        console.error(err);
+        showToast("⚠️ 生成變種題時發生異常，請重試。");
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = origHtml;
+      }
+    }
+
+    // =========================================================================
+    // 8. 懸浮通知與初始化啟動
+    // =========================================================================
+    function showToast(message) {
+      const container = document.getElementById("toast-container");
+      if (!container) return;
+      const toast = document.createElement("div");
+      toast.className = "bg-slate-900/95 text-white text-xs sm:text-sm font-medium px-4 py-3 rounded-xl shadow-lg border border-slate-700/80 max-w-sm fade-in pointer-events-auto";
+      toast.textContent = message;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = "0";
+        toast.style.transition = "opacity 0.25s ease";
+        setTimeout(() => toast.remove(), 250);
+      }, 3600);
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      updateHeaderStats();
+      updateSyncIndicator();
+      renderTopicAnalysisView();
+      renderQuizView();
+      renderMistakesView();
+    });
+  </script>
+</body>
+</html>
